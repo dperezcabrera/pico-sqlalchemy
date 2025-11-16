@@ -16,7 +16,7 @@ class DatabaseConfigurer(Protocol):
 @configured(target="self", prefix="database", mapping="tree")
 @dataclass
 class DatabaseSettings:
-    url: str = "sqlite:///./app.db"
+    url: str = "sqlite+aiosqlite:///./app.db"
     echo: bool = False
     pool_size: int = 5
     pool_pre_ping: bool = True

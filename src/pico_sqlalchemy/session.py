@@ -1,10 +1,9 @@
 import contextvars
 from contextlib import asynccontextmanager
-from typing import Generator, Optional, Dict, Any
+from typing import Optional, Dict, Any, AsyncGenerator
 
-from sqlalchemy import Engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from pico_ioc import component
 
 _tx_context: contextvars.ContextVar["TransactionContext | None"] = contextvars.ContextVar(
@@ -48,9 +47,7 @@ class SessionManager:
             engine_kwargs["pool_pre_ping"] = pool_pre_ping
             engine_kwargs["pool_recycle"] = pool_recycle
 
-        self._engine: AsyncEngine = create_async_engine(
-            url, **engine_kwargs
-        )
+        self._engine: AsyncEngine = create_async_engine(url, **engine_kwargs)
         self._session_factory = sessionmaker(
             bind=self._engine,
             class_=AsyncSession,
@@ -79,7 +76,7 @@ class SessionManager:
         isolation_level: Optional[str] = None,
         rollback_for: tuple[type[BaseException], ...] = (Exception,),
         no_rollback_for: tuple[type[BaseException], ...] = (),
-    ) -> Generator[AsyncSession, None, None]:
+    ) -> AsyncGenerator[AsyncSession, None]:
         current = _tx_context.get()
 
         if propagation == "MANDATORY":
@@ -173,7 +170,7 @@ class SessionManager:
         isolation_level: Optional[str],
         rollback_for: tuple[type[BaseException], ...],
         no_rollback_for: tuple[type[BaseException], ...],
-    ) -> Generator[AsyncSession, None, None]:
+    ) -> AsyncGenerator[AsyncSession, None]:
         session = self.create_session()
         if isolation_level:
             await session.connection(
