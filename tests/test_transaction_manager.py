@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import Session, DeclarativeBase
+import pytest
+from sqlalchemy import Column, Integer, String, select
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.ext.asyncio import AsyncSession
 from pico_sqlalchemy import SessionManager
 
 
@@ -9,34 +11,37 @@ class Base(DeclarativeBase):
 
 class TxUser(Base):
     __tablename__ = "tx_users"
-    id = Column(Integer, primary_key=True)
-    username = Column(String(50), unique=True, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
 
-def test_commit_and_rollback():
-    manager = SessionManager(url="sqlite:///:memory:", echo=False)
-    Base.metadata.create_all(manager.engine)
+@pytest.mark.asyncio
+async def test_commit_and_rollback():
+    manager = SessionManager(url="sqlite+aiosqlite:///:memory:", echo=False)
+    
+    async with manager.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-    with manager.transaction() as session:
-        assert isinstance(session, Session)
+    async with manager.transaction() as session:
+        assert isinstance(session, AsyncSession)
         user = TxUser(username="alice")
         session.add(user)
 
-    with manager.transaction(read_only=True) as session:
-        users = session.query(TxUser).all()
+    async with manager.transaction(read_only=True) as session:
+        users = list((await session.scalars(select(TxUser))).all())
         assert len(users) == 1
         assert users[0].username == "alice"
 
     try:
-        with manager.transaction() as session:
+        async with manager.transaction() as session:
             user = TxUser(username="bob")
             session.add(user)
             raise ValueError("boom")
     except ValueError:
         pass
 
-    with manager.transaction(read_only=True) as session:
-        users = session.query(TxUser).order_by(TxUser.username).all()
+    async with manager.transaction(read_only=True) as session:
+        stmt = select(TxUser).order_by(TxUser.username)
+        users = list((await session.scalars(stmt)).all())
         usernames = [u.username for u in users]
         assert usernames == ["alice"]
-
