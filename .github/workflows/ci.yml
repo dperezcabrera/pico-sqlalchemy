@@ -32,6 +32,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox
 
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
       - name: Run tests with coverage (writes to repo root)
         shell: bash
         run: |
@@ -98,5 +103,4 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: dperezcabrera/pico-fastapi
-
+          slug: dperezcabrera/pico-sqlalchemy

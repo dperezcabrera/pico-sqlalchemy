@@ -1,11 +1,8 @@
 import inspect
-import logging
 from typing import Any, Callable
 from pico_ioc import MethodCtx, MethodInterceptor, component
 from .decorators import TRANSACTIONAL_META
 from .session import SessionManager
-
-log = logging.getLogger(__name__)
 
 
 @component
@@ -29,21 +26,14 @@ class TransactionalInterceptor(MethodInterceptor):
         rollback_for = meta["rollback_for"]
         no_rollback_for = meta["no_rollback_for"]
 
-        log.debug(
-            f"TransactionalInterceptor: Starting transaction for {ctx.name} "
-            f"with propagation={propagation}"
-        )
-
-        with self.sm.transaction(
+        async with self.sm.transaction(
             propagation=propagation,
             read_only=read_only,
             isolation_level=isolation,
             rollback_for=rollback_for,
             no_rollback_for=no_rollback_for,
         ):
-            log.debug(f"TransactionalInterceptor: Calling next for {ctx.name}")
             result = call_next(ctx)
             if inspect.isawaitable(result):
                 result = await result
-            log.debug(f"TransactionalInterceptor: Completed call for {ctx.name}")
             return result

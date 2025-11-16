@@ -3,7 +3,7 @@ from .decorators import transactional, repository
 from .session import SessionManager, get_session
 from .interceptor import TransactionalInterceptor
 from .factory import SqlAlchemyFactory
-from .base import AppBase
+from .base import AppBase, Mapped, mapped_column
 
 __all__ = [
     "DatabaseSettings",
@@ -15,4 +15,6 @@ __all__ = [
     "TransactionalInterceptor",
     "SqlAlchemyFactory",
     "AppBase",
+    "Mapped",
+    "mapped_column",
 ]

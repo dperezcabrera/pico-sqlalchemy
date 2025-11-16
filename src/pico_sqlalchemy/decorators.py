@@ -48,7 +48,7 @@ def transactional(
                 manager = get_default_session_manager()
                 if manager is None:
                     return await func(*args, **kwargs)
-                with manager.transaction(
+                async with manager.transaction(
                     propagation=propagation,
                     read_only=read_only,
                     isolation_level=isolation_level,
@@ -61,17 +61,10 @@ def transactional(
             return async_wrapper
 
         def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            manager = get_default_session_manager()
-            if manager is None:
-                return func(*args, **kwargs)
-            with manager.transaction(
-                propagation=propagation,
-                read_only=read_only,
-                isolation_level=isolation_level,
-                rollback_for=rollback_for,
-                no_rollback_for=no_rollback_for,
-            ):
-                return func(*args, **kwargs)
+            raise TypeError(
+                f"Cannot apply @transactional to sync function '{func.__name__}' "
+                "when using an async SessionManager."
+            )
 
         setattr(sync_wrapper, TRANSACTIONAL_META, metadata)
         return sync_wrapper
