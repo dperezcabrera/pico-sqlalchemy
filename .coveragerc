@@ -1,0 +1,17 @@
+[run]
+branch = True
+source =
+    pico_fastapi
+omit =
+    */_version.py
+
+[paths]
+pico_fastapi =
+    src/pico_fastapi
+    .tox/*/lib/*/site-packages/pico_fastapi
+    .tox/*/site-packages/pico_fastapi
+    */site-packages/pico_fastapi
+
+[report]
+show_missing = True
+

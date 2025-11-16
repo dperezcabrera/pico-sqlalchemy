@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=69.0", "wheel", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pico-sqlalchemy"
+dynamic = ["version"]
+authors = [{ name = "David Perez Cabrera", email = "dperezcabrera@gmail.com" }]
+description = "Pico-ioc integration for SQLAlchemy. Adds Spring-style transactional support, configuration, and helpers."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+keywords = [
+    "ioc",
+    "di",
+    "dependency injection",
+    "sqlalchemy",
+    "transaction",
+    "orm",
+    "inversion of control",
+    "asyncio" # Added asyncio keyword
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Database",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "pico-ioc >= 2.0",
+    "sqlalchemy >= 2.0",
+]
+
+[project.optional-dependencies]
+async = [
+    "asyncpg >= 0.29.0",
+]
+
+test = [
+    "pytest >= 8",
+    "pytest-asyncio >= 0.23.5",
+    "pytest-cov >= 5",
+]
+
+[project.urls]
+Homepage = "https://github.com/dperezcabrera/pico-sqlalchemy"
+Repository = "https://github.com/dperezcabrera/pico-sqlalchemy"
+"Issue Tracker" = "https://github.com/dperezcabrera/pico-sqlalchemy/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pico_sqlalchemy*"]
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+fallback_version = "0.1.0"
+write_to = "src/pico_sqlalchemy/_version.py"
+write_to_template = "__version__ = '{version}'\n"
