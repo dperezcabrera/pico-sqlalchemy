@@ -1,7 +1,6 @@
 import contextvars
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any, AsyncGenerator
-
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from pico_ioc import component
@@ -9,24 +8,11 @@ from pico_ioc import component
 _tx_context: contextvars.ContextVar["TransactionContext | None"] = contextvars.ContextVar(
     "pico_sqlalchemy_tx_context", default=None
 )
-_default_manager: Optional["SessionManager"] = None
-
-
-def set_default_session_manager(manager: "SessionManager") -> None:
-    global _default_manager
-    _default_manager = manager
-
-
-def get_default_session_manager() -> Optional["SessionManager"]:
-    return _default_manager
-
 
 class TransactionContext:
     __slots__ = ("session",)
-
     def __init__(self, session: AsyncSession):
         self.session = session
-
 
 @component(scope="singleton")
 class SessionManager:
@@ -39,14 +25,11 @@ class SessionManager:
         pool_recycle: int = 3600,
     ):
         engine_kwargs: Dict[str, Any] = {"echo": echo}
-
         is_memory_sqlite = "sqlite" in url and ":memory:" in url
-
         if not is_memory_sqlite:
             engine_kwargs["pool_size"] = pool_size
             engine_kwargs["pool_pre_ping"] = pool_pre_ping
             engine_kwargs["pool_recycle"] = pool_recycle
-
         self._engine: AsyncEngine = create_async_engine(url, **engine_kwargs)
         self._session_factory = sessionmaker(
             bind=self._engine,
@@ -55,7 +38,6 @@ class SessionManager:
             autocommit=False,
             expire_on_commit=False,
         )
-        set_default_session_manager(self)
 
     @property
     def engine(self) -> AsyncEngine:
@@ -78,13 +60,11 @@ class SessionManager:
         no_rollback_for: tuple[type[BaseException], ...] = (),
     ) -> AsyncGenerator[AsyncSession, None]:
         current = _tx_context.get()
-
         if propagation == "MANDATORY":
             if current is None:
                 raise RuntimeError("MANDATORY propagation requires active transaction")
             yield current.session
             return
-
         if propagation == "NEVER":
             if current is not None:
                 raise RuntimeError("NEVER propagation forbids active transaction")
@@ -94,7 +74,6 @@ class SessionManager:
             finally:
                 await session.close()
             return
-
         if propagation == "NOT_SUPPORTED":
             if current is not None:
                 token = _tx_context.set(None)
@@ -113,7 +92,6 @@ class SessionManager:
                 finally:
                     await session.close()
             return
-
         if propagation == "SUPPORTS":
             if current is not None:
                 yield current.session
@@ -124,7 +102,6 @@ class SessionManager:
             finally:
                 await session.close()
             return
-
         if propagation == "REQUIRES_NEW":
             if current is not None:
                 parent_token = _tx_context.set(None)
@@ -147,7 +124,6 @@ class SessionManager:
                 ) as session:
                     yield session
             return
-
         if propagation == "REQUIRED":
             if current is not None:
                 yield current.session
@@ -160,7 +136,6 @@ class SessionManager:
             ) as session:
                 yield session
             return
-
         raise ValueError(f"Unknown propagation: {propagation}")
 
     @asynccontextmanager
@@ -176,7 +151,6 @@ class SessionManager:
             await session.connection(
                 execution_options={"isolation_level": isolation_level}
             )
-
         ctx = TransactionContext(session)
         token = _tx_context.set(ctx)
         try:
@@ -193,7 +167,6 @@ class SessionManager:
         finally:
             _tx_context.reset(token)
             await session.close()
-
 
 def get_session(manager: SessionManager) -> AsyncSession:
     session = manager.get_current_session()

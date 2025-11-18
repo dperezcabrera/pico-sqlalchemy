@@ -1,16 +1,16 @@
 [run]
 branch = True
 source =
-    pico_fastapi
+    pico_sqlalchemy
 omit =
     */_version.py
 
 [paths]
-pico_fastapi =
-    src/pico_fastapi
-    .tox/*/lib/*/site-packages/pico_fastapi
-    .tox/*/site-packages/pico_fastapi
-    */site-packages/pico_fastapi
+pico_sqlalchemy =
+    src/pico_sqlalchemy
+    .tox/*/lib/*/site-packages/pico_sqlalchemy
+    .tox/*/site-packages/pico_sqlalchemy
+    */site-packages/pico_sqlalchemy
 
 [report]
 show_missing = True

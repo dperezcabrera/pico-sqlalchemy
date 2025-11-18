@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.h
 
 ---
 
-## [Unreleased]
+## [0.1.1] - 2025-11-18
+
+### Fixed
+- **Architecture:** Removed the global `_default_manager` singleton ("Service Locator" anti-pattern). `SessionManager` is now purely managed by the IoC container.
+- **Decorators:** Refactored `@transactional` to use `pico-ioc`'s AOP system (`@intercepted_by`) instead of manual function wrapping. This ensures proper dependency injection of the `SessionManager` into the interceptor, enabling support for multiple databases/managers in the future.
+- **Cleanup:** Removed unused `REPOSITORIES` global set.
+- Updated dependency requirement to `pico-ioc>=2.1.3`.
+
+### Changed
+- **Internal:** `SessionManager` no longer registers itself globally upon instantiation. Components needing a session manager must have it injected or be intercepted by `TransactionalInterceptor`.
+
+---
+
+## [0.1.0]
 
 ### Added
 
