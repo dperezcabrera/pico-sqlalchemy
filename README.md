@@ -8,6 +8,7 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=dperezcabrera_pico-sqlalchemy\&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=dperezcabrera_pico-sqlalchemy)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=dperezcabrera_pico-sqlalchemy\&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=dperezcabrera_pico-sqlalchemy)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=dperezcabrera_pico-sqlalchemy\&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=dperezcabrera_pico-sqlalchemy)
+[![Docs](https://img.shields.io/badge/Docs-pico--sqlalchemy-blue?style=flat&logo=readthedocs&logoColor=white)](https://dperezcabrera.github.io/pico-sqlalchemy/)
 
 # Pico-SQLAlchemy
 
