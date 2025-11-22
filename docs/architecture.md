@@ -7,40 +7,35 @@ Its purpose is not to replace SQLAlchemy — but to ensure that **repositories a
 
 ## 1. High-Level Design
 
-```
-
-```
+```text
              ┌─────────────────────────────┐
-             │         SQLAlchemy          │
+             │          SQLAlchemy         │
              │ (AsyncEngine / AsyncSession)│
              └──────────────┬──────────────┘
                             │
                   Async Transaction Wrapping
                             │
              ┌──────────────▼───────────────┐
-             │       pico-sqlalchemy       │
+             │       pico-sqlalchemy        │
              │ (@transactional, @repository)│
              └──────────────┬───────────────┘
                             │
                      IoC Resolution
                             │
              ┌──────────────▼───────────────┐
-             │           Pico-IoC          │
-             │ (Container / Scopes / DI)   │
+             │           Pico-IoC           │
+             │ (Container / Scopes / DI)    │
              └──────────────┬───────────────┘
                             │
                Async Domain Services, Repos,
                     Aggregates, Logic
 ```
 
-```
+-----
 
----
+## 2\. Data Flow (Transactional Execution)
 
-## 2. Data Flow (Transactional Execution)
-
-```
-
+```text
 Async repository or service method called
 │
 ▼
@@ -52,7 +47,7 @@ Async repository or service method called
 ┌────────────────────────────────────────────┐
 │ SessionManager enters an async transaction │
 │ - `async with manager.transaction(...)`    │
-│ - REQUIRED / REQUIRES\_NEW / SUPPORTS       │
+│ - REQUIRED / REQUIRES_NEW / SUPPORTS       │
 │ - read-only or read-write                  │
 │ - automatic `await commit()` / `await rollback()`│
 └────────────────────────────────────────────┘
@@ -65,7 +60,6 @@ Commit or rollback (`await`)
 │
 ▼
 Transaction scope disposed, session closed (`await`)
-
 ```
 
 ### Key guarantees
@@ -77,16 +71,18 @@ Transaction scope disposed, session closed (`await`)
 | Controlled transactions | Declarative semantics (`REQUIRED`, `REQUIRES_NEW`, etc.) |
 | Async-native | `contextvars` + `async/await` ensure per-task isolation |
 
----
+-----
 
-## 3. Repository Model
+## 3\. Repository Model
 
 Repositories are **plain Python classes** declared with `@repository`.
 They:
 
-* receive dependencies via `__init__`
-* run their methods inside transactional decorators (which must now be `async def`)
-* access the active async session using `get_session()`
+  * receive dependencies via `__init__`
+  * run their methods inside transactional decorators (which must now be `async def`)
+  * access the active async session using `get_session()`
+
+<!-- end list -->
 
 ```python
 from sqlalchemy.future import select
@@ -121,12 +117,12 @@ No shared state.
 At startup:
 
 1.  `@repository` registers the class as a transactional component.
-2.  `pico-sqlalchemy` automatically applies an `async` MethodInterceptor to all its methods.
+2.  `pico-sqlalchemy` automatically applies an `async` MethodInterceptor to methods decorated with `@transactional`.
 3.  During execution:
-      * The interceptor reads the method’s metadata (`@transactional`)
-      * It opens, joins, suspends, or creates a new transaction
-        depending on the propagation mode
-      * It executes the `async def` method inside an `async with` transactional context
+      * The interceptor is **injected** with the correct `SessionManager` instance by the container.
+      * It reads the method’s metadata (`@transactional`).
+      * It opens, joins, suspends, or creates a new transaction depending on the propagation mode.
+      * It executes the `async def` method inside an `async with` transactional context.
 
 Equivalent to Spring Data or JPA-style declarative transactions.
 
