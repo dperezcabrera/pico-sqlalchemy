@@ -102,11 +102,24 @@ class RepositoryQueryInterceptor(MethodInterceptor):
         base_sql = f"SELECT * FROM {table_name}"
         if expr:
             base_sql += f" WHERE {expr}"
+        
         page_req = None
         if paged:
             page_req = params.pop("page", None)
             if not isinstance(page_req, PageRequest):
                 raise TypeError("Paged expr query requires a 'page: PageRequest' parameter")
+
+        if page_req and page_req.sorts:
+            valid_columns = {c.name for c in entity.__table__.columns}
+            sort_parts = []
+            for s in page_req.sorts:
+                if s.field not in valid_columns:
+                    raise ValueError(f"Invalid sort field: {s.field}")
+                direction = "DESC" if s.direction.upper() == "DESC" else "ASC"
+                sort_parts.append(f"{s.field} {direction}")
+            if sort_parts:
+                base_sql += " ORDER BY " + ", ".join(sort_parts)
+
         if paged:
             count_sql = f"SELECT COUNT(*) FROM ({base_sql}) AS sub"
             total_result = await session.execute(text(count_sql), params)
