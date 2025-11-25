@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 from pico_ioc import configured
 
-
 @runtime_checkable
 class DatabaseConfigurer(Protocol):
     @property
