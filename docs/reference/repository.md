@@ -87,15 +87,17 @@ class StatsRepository:
 
 -----
 
-## 3\. Pagination
+## 3. Pagination & Sorting
 
-Pico-SQLAlchemy has built-in support for offset-based pagination.
+Pico-SQLAlchemy provides built-in support for offset-based pagination and dynamic sorting.
+
+### Basic Pagination
 
 1.  Set `paged=True` in the `@query` decorator.
 2.  Add a parameter of type `PageRequest` to your method signature.
 3.  Set the return type to `Page[T]`.
 
-The library automatically generates a count query (e.g., `SELECT COUNT(*) FROM (...)`) and the paginated data query (`LIMIT ... OFFSET ...`).
+The library automatically generates the count query and applies limits/offsets.
 
 ```python
 from pico_sqlalchemy import Page, PageRequest
@@ -107,8 +109,37 @@ class UserRepository:
     async def find_active_paged(self, page: PageRequest) -> Page[User]:
         ...
 
-# Usage:
+# Usage: Get page 0, size 10
 # await repo.find_active_paged(PageRequest(page=0, size=10))
+````
+
+### Dynamic Sorting
+
+You can request dynamic sorting by passing a list of `Sort` objects within the `PageRequest`.
+
+**Security Note:** To prevent SQL Injection, dynamic sorting is only available in **Expression Mode** (`expr`). The library validates that the requested sort fields exist in the underlying SQLAlchemy model columns. If a field is invalid, a `ValueError` is raised.
+
+```python
+from pico_sqlalchemy import PageRequest, Sort
+
+# Usage: Sort by name ASC, then age DESC
+request = PageRequest(
+    page=0, 
+    size=20, 
+    sorts=[
+        Sort(field="name", direction="ASC"),
+        Sort(field="age", direction="DESC")
+    ]
+)
+
+await repo.find_active_paged(request)
+```
+
+| Parameter | Description |
+| :--- | :--- |
+| `field` | The name of the column in the model (e.g., `"username"`). |
+| `direction` | `"ASC"` (default) or `"DESC"`. |
+
 ```
 
 -----
@@ -130,4 +161,3 @@ The `@query` interceptor is smart about return types:
 | **`@repository` (Plain Method)** | **Read-Write** | Executes your Python code body. |
 | **`@query`** | **Read-Only** | **Ignores** body; executes SQL/Expr automatically. |
 | **`@transactional`** | **Explicit** | Executes your Python code body with custom config. |
-
