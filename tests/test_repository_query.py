@@ -17,8 +17,6 @@ from pico_sqlalchemy import (
     PageRequest,
     Page,
     DatabaseConfigurer,
-    SqlAlchemyFactory,
-    DatabaseSettings,
 )
 
 

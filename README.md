@@ -12,51 +12,40 @@
 
 # Pico-SQLAlchemy
 
-**Pico-SQLAlchemy** integrates **[Pico-IoC](https://github.com/dperezcabrera/pico-ioc)** with **SQLAlchemy**, providing real inversion of control for your persistence layer, with declarative repositories, transactional boundaries, and clean architectural isolation.
+**Pico-SQLAlchemy** integrates **[Pico-IoC](https://github.com/dperezcabrera/pico-ioc)** with **SQLAlchemy**, providing a true inversion of control persistence layer with **Spring Data-style** declarative features.
 
-It brings constructor-based dependency injection, transparent transaction management, and a repository pattern inspired by the elegance of Spring Data — but using pure Python, Pico-IoC, and SQLAlchemy’s ORM.
+It brings constructor-based dependency injection, **implicit transaction management**, and powerful **declarative queries** using pure Python and SQLAlchemy’s Async ORM.
 
-> 🐍 Requires Python 3.10+
-> 🚀 **Async-Native:** Built entirely on SQLAlchemy's async ORM (`AsyncSession`, `create_async_engine`).
-> 🧩 Works with SQLAlchemy 2.0+ ORM
-> 🔄 Automatic async transaction management
-> 🧪 Fully testable without a running DB
-
-With Pico-SQLAlchemy you get the expressive power of SQLAlchemy with proper IoC, clean layering, and annotation-driven transactions.
+> 🐍 **Requires Python 3.10+**
+> 🚀 **Async-Native:** Built entirely on `AsyncSession` and `create_async_engine`.
+> ✨ **Zero-Boilerplate:** Repositories are transactional by default.
+> 🔍 **Declarative Queries:** Define SQL or expressions in decorators; the library executes them for you.
 
 ---
 
-## 🎯 Why pico-sqlalchemy
+## 🎯 Why pico-sqlalchemy?
 
-SQLAlchemy is powerful, but most applications end up with raw session handling, manual transaction scopes, or ad-hoc repository patterns.
+Most Python apps suffer from manual session handling (`async with session...`), scattered transaction logic, and verbose repository patterns.
 
-Pico-SQLAlchemy provides:
+**Pico-SQLAlchemy** solves this by offering:
 
-* Constructor-injected repositories and services
-* Declarative `@transactional` boundaries
-* `REQUIRES_NEW`, `READ_ONLY`, `MANDATORY`, and all familiar propagation modes
-* `SessionManager` that centralizes engine/session lifecycle
-* Clean decoupling from frameworks (FastAPI, Flask, CLI, workers)
-
-| Concern | SQLAlchemy Default | pico-sqlalchemy |
+| Feature | SQLAlchemy Default | pico-sqlalchemy |
 | :--- | :--- | :--- |
-| Managing sessions | Manual `AsyncSession()` | Automatic |
-| Transactions | Explicit `await commit()` / `await rollback()` | Declarative `@transactional` |
-| Repository pattern | DIY, inconsistent | First-class `@repository` |
-| Dependency injection | None | IoC-driven constructor injection |
-| Testability | Manual setup | Container-managed + overrides |
+| **Transactions** | Manual `commit()` / `rollback()` | **Implicit** (Auto-managed) |
+| **Repositories** | DIY Classes | **`@repository`** (Transactional by default) |
+| **Queries** | Manual implementation | **`@query`** (Declarative execution) |
+| **Injection** | None / Global variables | **Constructor Injection** (IoC) |
+| **Pagination** | Manual calculation | **Automatic** (`PageRequest` / `Page`) |
 
 ---
 
 ## 🧱 Core Features
 
-* Repository classes with `@repository`
-* Declarative transactions via `@transactional`
-* Full propagation semantics (`REQUIRED`, `REQUIRES_NEW`, `MANDATORY`, etc.)
-* Automatic `AsyncSession` lifecycle
-* Centralized `AsyncEngine` + session factory via `SessionManager`
-* Transaction-aware `get_session()` for repository methods
-* Plug-and-play integration with any Pico-IoC app (FastAPI, CLI tools, workers, event handlers)
+* **Implicit Transactions:** Methods inside `@repository` are automatically **Read-Write** transactional.
+* **Declarative Queries:** Use `@query` to run SQL or Expressions automatically (defaults to **Read-Only**).
+* **AOP-Based Propagation:** `REQUIRED`, `REQUIRES_NEW`, `MANDATORY`, `NEVER`, etc.
+* **Session Lifecycle:** Centralized `SessionManager` handles engine creation and cleanup.
+* **Pagination:** Built-in support for paged results via `@query(paged=True)`.
 
 ---
 
@@ -66,19 +55,17 @@ Pico-SQLAlchemy provides:
 pip install pico-sqlalchemy
 ```
 
-Also install `pico-ioc`, `sqlalchemy`, and an **async driver**:
+You will also need an async driver (e.g., `aiosqlite` or `asyncpg`):
 
 ```bash
-pip install pico-ioc sqlalchemy
-pip install aiosqlite  # For SQLite
-# pip install asyncpg    # For PostgreSQL
+pip install pico-ioc sqlalchemy aiosqlite
 ```
 
 -----
 
 ## 🚀 Quick Example
 
-### Define your model:
+### 1\. Define Model
 
 ```python
 from sqlalchemy import Integer, String
@@ -90,35 +77,42 @@ class User(AppBase):
     username: Mapped[str] = mapped_column(String(50))
 ```
 
-### Define a repository:
+### 2\. Define Repository (The "Magic" Part)
+
+Notice we don't need `@transactional` here.
+
+  * `save`: Automatically runs in a **Read-Write** transaction.
+  * `find_by_name`: Automatically runs in a **Read-Only** transaction and executes the query logic.
+
+<!-- end list -->
 
 ```python
-from sqlalchemy.future import select
-from pico_sqlalchemy import repository, transactional, get_session, SessionManager
+from pico_sqlalchemy import repository, query, SessionManager, get_session
 
-@repository
+@repository(entity=User)
 class UserRepository:
     def __init__(self, manager: SessionManager):
         self.manager = manager
 
-    @transactional
+    # IMPLICIT: Read-Write Transaction
     async def save(self, user: User) -> User:
         session = get_session(self.manager)
         session.add(user)
         return user
 
-    @transactional(read_only=True)
-    async def find_all(self) -> list[User]:
-        session = get_session(self.manager)
-        stmt = select(User).order_by(User.username)
-        result = await session.scalars(stmt)
-        return list(result.all())
+    # DECLARATIVE: Read-Only Transaction + Auto-Execution
+    @query(expr="username = :username", unique=True)
+    async def find_by_name(self, username: str) -> User | None:
+        ... # Body is ignored; the library executes the query
 ```
 
-### Define a service:
+### 3\. Define Service
+
+Use `@transactional` here to define business logic boundaries.
 
 ```python
 from pico_ioc import component
+from pico_sqlalchemy import transactional
 
 @component
 class UserService:
@@ -127,16 +121,16 @@ class UserService:
 
     @transactional
     async def create(self, name: str) -> User:
-        user = User(username=name)
-        user = await self.repo.save(user)
-        
-        session = get_session(self.repo.manager)
-        await session.flush()
-        await session.refresh(user)
-        return user
+        # 1. Check existence (Read-Only tx from repo)
+        existing = await self.repo.find_by_name(name)
+        if existing:
+            raise ValueError("User exists")
+            
+        # 2. Save new user (Joins current transaction)
+        return await self.repo.save(User(username=name))
 ```
 
-### Initialize Pico-IoC and run:
+### 4\. Run it
 
 ```python
 import asyncio
@@ -144,25 +138,18 @@ from pico_ioc import init, configuration, DictSource
 
 config = configuration(DictSource({
     "database": {
-        "url": "sqlite+aiosqlite:///:memory:", # Async URL
+        "url": "sqlite+aiosqlite:///:memory:",
         "echo": False
     }
 }))
 
-container = init(
-    modules=["services", "repositories", "pico_sqlalchemy"],
-    config=config,
-)
-
 async def main():
-    # Use await container.aget() for async resolution
+    container = init(modules=["pico_sqlalchemy", "__main__"], config=config)
     service = await container.aget(UserService)
     
-    # Await the async service method
     user = await service.create("alice")
-    print(f"Created user: {user.id}")
-
-    # Clean up async resources
+    print(f"Created: {user.id}")
+    
     await container.cleanup_all_async()
 
 if __name__ == "__main__":
@@ -171,101 +158,96 @@ if __name__ == "__main__":
 
 -----
 
-## 🔄 Transaction Propagation Modes
+## ⚡ Transaction Hierarchy & Rules
 
-Pico-SQLAlchemy supports the core Spring-inspired semantics:
+Pico-SQLAlchemy applies a "Best Effort" strategy to determine transaction configuration. The priority order (highest wins) is:
 
-| Mode | Behavior |
-| :--- | :--- |
-| `REQUIRED` | Join existing tx or create new |
-| `REQUIRES_NEW` | Suspend parent and start new tx |
-| `SUPPORTS` | Join if exists, else run without tx |
-| `MANDATORY` | Requires existing tx |
-| `NOT_SUPPORTED`| Run without tx, suspending parent |
-| `NEVER` | Fail if a tx exists |
+| Priority | Decorator | Default Mode | Use Case |
+| :--- | :--- | :--- | :--- |
+| **1 (High)** | **`@transactional(...)`** | Explicit Config | Overriding defaults, Service layer logic. |
+| **2** | **`@query(...)`** | **Read-Only** | Efficient data fetching. |
+| **3 (Base)** | **`@repository`** | **Read-Write** | Default for CRUD (saves, updates, deletes). |
 
-Example:
+### Example Scenarios
+
+1.  **Plain Method in Repository:**
+
+    ```python
+    async def update_user(self): ...
+    ```
+
+    👉 **Result:** Active Read-Write Transaction (Implicit from `@repository`).
+
+2.  **Query Method:**
+
+    ```python
+    @query("SELECT ...")
+    async def get_data(self): ...
+    ```
+
+    👉 **Result:** Active Read-Only Transaction (Implicit from `@query`).
+
+3.  **Manual Override:**
+
+    ```python
+    @transactional(read_only=True)
+    async def complex_report(self): ...
+    ```
+
+    👉 **Result:** Active Read-Only Transaction (Explicit override).
+
+-----
+
+## 🔍 Declarative Queries in Depth
+
+The `@query` decorator eliminates boilerplate for common fetches.
+
+### Expression Mode (`expr`)
+
+Requires `@repository(entity=Model)`. Injects the expression into a `SELECT * FROM table WHERE ...`.
 
 ```python
-@transactional(propagation="REQUIRES_NEW")
-async def write_audit(self, entry: AuditEntry):
-    ...
+@query(expr="age > :min_age", unique=False)
+async def find_adults(self, min_age: int) -> list[User]: ...
+```
+
+### SQL Mode (`sql`)
+
+Executes raw SQL. Useful for complex joins or specific DTOs.
+
+```python
+@query(sql="SELECT count(*) as cnt FROM users")
+async def count_users(self) -> int: ...
+```
+
+### Automatic Pagination
+
+Just add `paged=True` and a `page: PageRequest` parameter.
+
+```python
+from pico_sqlalchemy import Page, PageRequest
+
+@query(expr="active = true", paged=True)
+async def find_active(self, page: PageRequest) -> Page[User]: ...
 ```
 
 -----
 
-## 🧪 Testing with Pico-IoC
+## 🧪 Testing
 
-You can override repositories, engines, or services easily:
+Testing is simple because you can override the configuration or the components easily using Pico-IoC.
 
 ```python
-import pytest
-import pytest_asyncio
-from pico_ioc import init, configuration, DictSource
-from pico_sqlalchemy import SessionManager, AppBase
-
-# In conftest.py
-@pytest_asyncio.fixture
-async def container():
-    cfg = configuration(DictSource({"database": {"url": "sqlite+aiosqlite:///:memory:"}}))
-    c = init(modules=["pico_sqlalchemy", "myapp"], config=cfg)
-    
-    # Setup the in-memory database
-    sm = await c.aget(SessionManager)
-    async with sm.engine.begin() as conn:
-        await conn.run_sync(AppBase.metadata.create_all)
-
-    yield c
-    
-    # Clean up all async components
-    await c.cleanup_all_async()
-
-# In your test
 @pytest.mark.asyncio
-async def test_my_service(container):
+async def test_service():
+    # Setup container with in-memory DB
+    container = ... 
+    
     service = await container.aget(UserService)
     user = await service.create("test")
+    
     assert user.id is not None
 ```
-
------
-
-## 🧬 Example: Custom Database Configurer
-
-```python
-from pico_sqlalchemy import DatabaseConfigurer, AppBase
-from pico_ioc import component
-import asyncio
-
-@component
-class TableCreationConfigurer(DatabaseConfigurer):
-    priority = 10
-    def __init__(self, base: AppBase):
-        self.base = base
-        
-    def configure(self, engine):
-        # This configure method is called by the factory.
-        # We need to run the async setup.
-        async def setup():
-            async with engine.begin() as conn:
-                await conn.run_sync(self.base.metadata.create_all)
-        
-        asyncio.run(setup())
-```
-
-Pico-SQLAlchemy will detect it and call `configure` during initialization.
-
------
-
-## ⚙️ How It Works
-
-  * `SessionManager` is created by Pico-IoC (`SqlAlchemyFactory`)
-  * A global session context is established via `contextvars`
-  * `@transactional` automatically opens/closes async transactions
-  * `@repository` registers a class as a singleton component
-  * All dependencies (repositories, services, configurers) are resolved by Pico-IoC
-
-No globals. No implicit singletons. No framework coupling.
 
 -----
 
@@ -273,24 +255,23 @@ No globals. No implicit singletons. No framework coupling.
 
 ```
                  ┌─────────────────────────────┐
-                 │         Your App            │
+                 │          Your App           │
                  └──────────────┬──────────────┘
                                 │
-                      Constructor Injection
+                        Constructor Injection
                                 │
                  ┌──────────────▼───────────────┐
                  │          Pico-IoC            │
                  └──────────────┬───────────────┘
                                 │
-                 SessionManager / SqlAlchemyFactory
-                                │
                  ┌──────────────▼───────────────┐
                  │       pico-sqlalchemy        │
-                 │ Transactional Decorators     │
-                 │ Repository Metadata          │
+                 │ 1. Implicit Repo Transactions│
+                 │ 2. Declarative @query        │
+                 │ 3. Explicit @transactional   │
                  └──────────────┬───────────────┘
                                 │
-                             SQLAlchemy
+                           SQLAlchemy
                            (Async ORM)
 ```
 
@@ -299,4 +280,3 @@ No globals. No implicit singletons. No framework coupling.
 ## 📝 License
 
 MIT
-
