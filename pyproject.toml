@@ -18,7 +18,7 @@ keywords = [
     "transaction",
     "orm",
     "inversion of control",
-    "asyncio" # Added asyncio keyword
+    "asyncio"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

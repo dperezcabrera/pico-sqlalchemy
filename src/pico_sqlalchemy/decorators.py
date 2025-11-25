@@ -6,6 +6,8 @@ R = TypeVar("R")
 
 TRANSACTIONAL_META = "_pico_sqlalchemy_transactional_meta"
 REPOSITORY_META = "_pico_sqlalchemy_repository_meta"
+QUERY_META = "_pico_sqlalchemy_query_meta"
+
 
 def transactional(
     *,
@@ -25,8 +27,7 @@ def transactional(
     }
     if propagation not in valid:
         raise ValueError(f"Invalid propagation: {propagation}")
-
-    metadata = {
+    metadata: dict[str, Any] = {
         "propagation": propagation,
         "read_only": read_only,
         "isolation_level": isolation_level,
@@ -41,6 +42,42 @@ def transactional(
 
     return decorator
 
+
+def query(
+    expr: str | None = None,
+    *,
+    sql: str | None = None,
+    paged: bool = False,
+    unique: bool = False,
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    if expr is None and sql is None:
+        raise ValueError("query decorator requires either 'expr' or 'sql'")
+    if expr is not None and sql is not None:
+        raise ValueError("query decorator cannot use both 'expr' and 'sql'")
+
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        mode = "sql" if sql is not None else "expr"
+        meta: dict[str, Any] = {
+            "mode": mode,
+            "expr": expr,
+            "sql": sql,
+            "paged": paged,
+            "unique": unique,
+        }
+        setattr(func, QUERY_META, meta)
+        from .repository_interceptor import RepositoryQueryInterceptor
+        return intercepted_by(RepositoryQueryInterceptor)(func)
+
+    return decorator
+
+
+def _query_sql(sql_text: str, **kwargs: Any) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    return query(expr=None, sql=sql_text, **kwargs)
+
+
+setattr(query, "sql", _query_sql)
+
+
 def repository(
     cls: Optional[type[Any]] = None,
     *,
@@ -49,7 +86,7 @@ def repository(
 ) -> Callable[[type[Any]], type[Any]] | type[Any]:
     def decorate(c: type[Any]) -> type[Any]:
         setattr(c, REPOSITORY_META, kwargs)
-        return component(c, scope=scope, **kwargs)
+        return component(c, scope=scope)
 
     if cls is not None:
         return decorate(cls)
