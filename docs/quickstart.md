@@ -1,10 +1,8 @@
 # Quick Start Guide
 
-This guide will walk you through creating a complete, runnable application using `pico-sqlalchemy`. We will build a simple user management system with an in-memory SQLite database.
+This guide will walk you through creating a complete, runnable application using `pico-sqlalchemy` with its **Zero-Boilerplate** features.
 
 ## Prerequisites
-
-Ensure you have installed the package:
 
 ```bash
 pip install pico-sqlalchemy aiosqlite
@@ -12,7 +10,7 @@ pip install pico-sqlalchemy aiosqlite
 
 ## 1\. Define the Data Model
 
-First, define your database models by inheriting from `AppBase`. This ensures all your models share the same SQLAlchemy `MetaData` and registry.
+Inherit from `AppBase` to ensure your models share the same registry.
 
 ```python
 from sqlalchemy import String
@@ -27,34 +25,39 @@ class User(AppBase):
 
 ## 2\. Create a Repository
 
-Repositories are responsible for direct database interactions. Use the `@repository` decorator to register them in the IoC container. Note that we do not commit transactions here; we just operate on the session.
+Repositories in `pico-sqlalchemy` are **transactional by default**.
+
+  * Standard methods (`save`) are **Read-Write**.
+  * `@query` methods are **Read-Only** and executed automatically.
+
+<!-- end list -->
 
 ```python
-from sqlalchemy import select
-from pico_sqlalchemy import repository, SessionManager, get_session
+from pico_sqlalchemy import repository, query, SessionManager, get_session
 
-@repository
+@repository(entity=User)
 class UserRepository:
     def __init__(self, session_manager: SessionManager):
         self.sm = session_manager
 
+    # 1. Implicit Read-Write Transaction
+    # No @transactional needed. Just get the session and work.
     async def save(self, name: str) -> User:
-        # get_session() retrieves the context-local async session
         session = get_session(self.sm)
         user = User(name=name)
         session.add(user)
         return user
 
-    async def list_all(self) -> list[User]:
-        session = get_session(self.sm)
-        stmt = select(User)
-        result = await session.scalars(stmt)
-        return list(result.all())
+    # 2. Declarative Read-Only Query
+    # No body needed. The library executes the SQL expression.
+    @query(expr="name = :name")
+    async def find_by_name(self, name: str) -> list[User]:
+        ...
 ```
 
 ## 3\. Create a Service Layer
 
-Services contain your business logic and define transaction boundaries using `@transactional`.
+Services define your business logic boundaries. Use `@transactional` here to wrap multiple repository calls into a single unit of work.
 
 ```python
 from pico_ioc import component
@@ -65,22 +68,20 @@ class UserService:
     def __init__(self, repo: UserRepository):
         self.repo = repo
 
-    @transactional(propagation="REQUIRED")
+    @transactional
     async def register_user(self, name: str) -> User:
-        # This runs inside a transaction.
-        # Commit happens automatically if this method returns successfully.
+        # 1. Reuse repository logic (joins current transaction)
+        existing = await self.repo.find_by_name(name)
+        if existing:
+            print(f"User {name} already seen!")
+        
+        # 2. Save new user
         return await self.repo.save(name)
-
-    @transactional(read_only=True)
-    async def show_users(self):
-        users = await self.repo.list_all()
-        for u in users:
-            print(f"User: {u.name}")
 ```
 
 ## 4\. Configure the Database
 
-We use `DatabaseConfigurer` to create tables on startup.
+Use `DatabaseConfigurer` to create tables on startup automatically.
 
 ```python
 import asyncio
@@ -93,34 +94,28 @@ class SchemaSetup(DatabaseConfigurer):
         self.base = base
 
     def configure(self, engine) -> None:
-        # Simple async table creation hook
         async def run_ddl():
             async with engine.begin() as conn:
                 await conn.run_sync(self.base.metadata.create_all)
         
-        # Schedule the coroutine
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(run_ddl())
-        else:
-            asyncio.run(run_ddl())
+        asyncio.run(run_ddl())
 ```
 
 ## 5\. Wire it Up
 
-Finally, initialize the `pico_ioc` container with your configuration and modules.
+Initialize the container and run the app.
 
 ```python
 import asyncio
 from pico_ioc import init, configuration, DictSource
 
 async def main():
-    # Configuration for the database connection
+    # Configuration
     cfg = configuration(
         DictSource({
             "database": {
                 "url": "sqlite+aiosqlite:///:memory:",
-                "echo": True
+                "echo": False
             }
         })
     )
@@ -131,12 +126,18 @@ async def main():
         config=cfg
     )
 
-    # Retrieve and use the service
-    service = container.get(UserService)
+    # Use the service
+    service = await container.aget(UserService)
+    
+    print("--- Registering Alice ---")
     await service.register_user("Alice")
-    await service.show_users()
+    
+    print("--- Registering Alice again (Check logic) ---")
+    await service.register_user("Alice")
+    
+    # Cleanup
+    await container.cleanup_all_async()
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
-

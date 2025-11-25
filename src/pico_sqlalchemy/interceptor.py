@@ -1,7 +1,7 @@
 import inspect
 from typing import Any, Callable
 from pico_ioc import MethodCtx, MethodInterceptor, component
-from .decorators import TRANSACTIONAL_META
+from .decorators import TRANSACTIONAL_META, QUERY_META, REPOSITORY_META
 from .session import SessionManager
 
 
@@ -13,6 +13,28 @@ class TransactionalInterceptor(MethodInterceptor):
     async def invoke(self, ctx: MethodCtx, call_next: Callable[[MethodCtx], Any]) -> Any:
         func = getattr(ctx.cls, ctx.name, None)
         meta = getattr(func, TRANSACTIONAL_META, None)
+
+        if not meta:
+            is_query = getattr(func, QUERY_META, None) is not None
+            repo_meta = getattr(ctx.cls, REPOSITORY_META, None)
+            is_repository = repo_meta is not None
+            
+            if is_query:
+                meta = {
+                    "propagation": "REQUIRED",
+                    "read_only": True,
+                    "isolation_level": None,
+                    "rollback_for": (Exception,),
+                    "no_rollback_for": (),
+                }
+            elif is_repository:
+                meta = {
+                    "propagation": "REQUIRED",
+                    "read_only": False,
+                    "isolation_level": None,
+                    "rollback_for": (Exception,),
+                    "no_rollback_for": (),
+                }
 
         if not meta:
             result = call_next(ctx)
