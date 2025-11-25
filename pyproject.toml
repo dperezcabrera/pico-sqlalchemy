@@ -69,3 +69,6 @@ local_scheme = "no-local-version"
 fallback_version = "0.1.0"
 write_to = "src/pico_sqlalchemy/_version.py"
 write_to_template = "__version__ = '{version}'\n"
+
+[project.entry-points."pico_stack.modules"]
+pico_sqlalchemy = "pico_sqlalchemy"
