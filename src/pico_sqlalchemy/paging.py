@@ -1,13 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Generic, Sequence, TypeVar
 
 T = TypeVar("T")
 
 
 @dataclass(frozen=True)
+class Sort:
+    field: str
+    direction: str = "ASC"
+
+
+@dataclass(frozen=True)
 class PageRequest:
     page: int
     size: int
+    sorts: list[Sort] = field(default_factory=list)
 
     @property
     def offset(self) -> int:
