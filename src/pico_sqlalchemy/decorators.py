@@ -1,3 +1,4 @@
+import inspect
 from typing import Any, Callable, Optional, ParamSpec, TypeVar
 from pico_ioc import component, intercepted_by
 
@@ -65,8 +66,11 @@ def query(
             "unique": unique,
         }
         setattr(func, QUERY_META, meta)
+        from .interceptor import TransactionalInterceptor
         from .repository_interceptor import RepositoryQueryInterceptor
-        return intercepted_by(RepositoryQueryInterceptor)(func)
+        
+        step_1 = intercepted_by(TransactionalInterceptor)(func)
+        return intercepted_by(RepositoryQueryInterceptor)(step_1)
 
     return decorator
 
@@ -86,6 +90,16 @@ def repository(
 ) -> Callable[[type[Any]], type[Any]] | type[Any]:
     def decorate(c: type[Any]) -> type[Any]:
         setattr(c, REPOSITORY_META, kwargs)
+        from .interceptor import TransactionalInterceptor
+
+        for name, method in inspect.getmembers(c):
+            if name.startswith("_"):
+                continue
+            
+            if inspect.iscoroutinefunction(method):
+                wrapped_method = intercepted_by(TransactionalInterceptor)(method)
+                setattr(c, name, wrapped_method)
+
         return component(c, scope=scope)
 
     if cls is not None:

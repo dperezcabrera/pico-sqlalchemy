@@ -52,7 +52,6 @@ class UserRepository:
         self.session_manager = session_manager
 
     @query(expr="username = :username", unique=True)
-    @transactional(read_only=True)
     async def find_by_username(self, username: str):
         raise AssertionError("Body should not be executed")
 
@@ -60,12 +59,10 @@ class UserRepository:
         "SELECT * FROM repo_users WHERE email = :email",
         unique=True,
     )
-    @transactional(read_only=True)
     async def find_by_email(self, email: str):
         raise AssertionError("Body should not be executed")
 
     @query(expr="1 = 1", paged=True)
-    @transactional(read_only=True)
     async def find_all_paged(self, page: PageRequest):
         raise AssertionError("Body should not be executed")
 

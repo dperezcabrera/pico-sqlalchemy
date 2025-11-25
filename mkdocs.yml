@@ -66,6 +66,7 @@ nav:
   - Reference:
       - Configuration: reference/configuration.md
       - Declarative Base: reference/declarative-base.md
+      - Repositories: reference/repository.md
       - Transactions: reference/transactions.md
   - Development:
       - Tooling: development/project-tooling.md
