@@ -4,10 +4,17 @@ from typing import Generic, Sequence, TypeVar
 T = TypeVar("T")
 
 
+_VALID_DIRECTIONS = {"ASC", "DESC"}
+
+
 @dataclass(frozen=True)
 class Sort:
     field: str
     direction: str = "ASC"
+
+    def __post_init__(self):
+        if self.direction.upper() not in _VALID_DIRECTIONS:
+            raise ValueError(f"Invalid sort direction: {self.direction!r} (expected 'ASC' or 'DESC')")
 
 
 @dataclass(frozen=True)

@@ -4,94 +4,85 @@ This module defines the project's canonical SQLAlchemy declarative base (`AppBas
 
 ## Overview
 
-- `AppBase` is a singleton subclass of `sqlalchemy.orm.DeclarativeBase`. All ORM models in the project should subclass `AppBase`.
-- `Mapped` and `mapped_column` are re-exported for consistent imports and typed SQLAlchemy 2.0-style mappings.
-- Using a single base keeps one `MetaData` for the entire project, simplifies migrations, and avoids table duplication issues.
+- `AppBase` is a **Singleton Component** subclassing `sqlalchemy.orm.DeclarativeBase`.
+- All ORM models in the project must subclass `AppBase`.
+- It acts as the central registry for your database schema (`MetaData`).
+- It is integrated with **Pico-IoC**, allowing you to inject the registry into other components (like database configurers).
 
-## What is this?
+## 1. Defining Models
 
-- A single, shared declarative base (`AppBase`) used to declare all SQLAlchemy ORM models.
-- Helper re-exports:
-  - `Mapped[T]`: a generic type hint for mapped attributes (SQLAlchemy 2.0).
-  - `mapped_column(...)`: the column factory used in typed class attributes.
-
-Why a singleton base?
-
-- Ensures a single `MetaData` object for the application.
-- Prevents accidental multiple table registries and conflicts.
-- Provides a consistent point of integration for migrations (e.g., Alembic) and schema generation.
-
-## How do I use it?
-
-1. Import `AppBase`, `Mapped`, and `mapped_column`.
-2. Define each ORM model as a subclass of `AppBase`.
-3. Use `Mapped[T]` with `mapped_column(...)` for typed columns and `relationship(...)` for associations.
-4. Use `AppBase.metadata` for schema operations (e.g., `create_all`, Alembic migrations).
-
-Example:
+You should define your models by inheriting from `AppBase`. Use the re-exported `Mapped` and `mapped_column` for clean, typed definitions compatible with SQLAlchemy 2.0.
 
 ```python
-from datetime import datetime
-from sqlalchemy import create_engine, String, ForeignKey, func, text
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import String, ForeignKey
+from sqlalchemy.orm import relationship
 
-# Import from the project's declarative base module.
-# Adjust the import path to match your package structure.
-from app.db.base import AppBase, Mapped, mapped_column
-
+# Import from the library
+from pico_sqlalchemy import AppBase, Mapped, mapped_column
 
 class User(AppBase):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
-    is_active: Mapped[bool] = mapped_column(server_default=text("1"))
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-
+    username: Mapped[str] = mapped_column(String(50), unique=True)
+    
     posts: Mapped[list["Post"]] = relationship(back_populates="author")
-
 
 class Post(AppBase):
     __tablename__ = "posts"
-
+    
     id: Mapped[int] = mapped_column(primary_key=True)
-    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
-    body: Mapped[str] = mapped_column(String)
-
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    content: Mapped[str] = mapped_column(String)
+    
     author: Mapped["User"] = relationship(back_populates="posts")
-
-
-# Create an engine and materialize the schema (in non-migration contexts).
-engine = create_engine("postgresql+psycopg://user:pass@localhost/dbname", echo=True)
-
-# Use the shared metadata carried by AppBase.
-AppBase.metadata.create_all(engine)
-
-# Basic CRUD with a typed session.
-with Session(engine) as session:
-    user = User(email="dev@example.com")
-    post = Post(author=user, title="Hello", body="First post")
-    session.add_all([user, post])
-    session.commit()
 ```
 
-## Migrations
+## 2\. Dependency Injection & Schema Management
 
-When configuring Alembic (or similar), point `target_metadata` at the shared metadata:
+Unlike standard SQLAlchemy apps where you might access `Base.metadata` globally, `pico-sqlalchemy` registers `AppBase` as a **Singleton Component**.
+
+This allows you to inject it into your `DatabaseConfigurer` to perform schema operations (like creating tables) during startup.
+
+### Example: Creating Tables on Startup
 
 ```python
-# alembic/env.py
-from app.db.base import AppBase
+import asyncio
+from pico_ioc import component
+from pico_sqlalchemy import DatabaseConfigurer, AppBase
 
+@component
+class TableCreationConfigurer(DatabaseConfigurer):
+    # 1. Inject AppBase (The singleton registry)
+    def __init__(self, base: AppBase):
+        self.base = base
+
+    def configure(self, engine):
+        async def init_schema():
+            async with engine.begin() as conn:
+                # 2. Access metadata through the injected instance
+                await conn.run_sync(self.base.metadata.create_all)
+        
+        asyncio.run(init_schema())
+```
+
+## 3\. Best Practices
+
+  * **Inheritance:** Always subclass `AppBase` for your entities. Do not create your own `DeclarativeBase`.
+  * **Imports:** Import `Mapped` and `mapped_column` from `pico_sqlalchemy` to ensure version consistency.
+  * **Injection over Globals:** While `AppBase.metadata` is technically accessible statically, prefer injecting `AppBase` into services or configurers that need access to the schema registry. This makes your components easier to test and mock.
+
+## 4\. Migrations (Alembic)
+
+For external tools like Alembic which run outside the IoC container context, you can still access the metadata statically.
+
+In your `alembic/env.py`:
+
+```python
+from pico_sqlalchemy import AppBase
+from myapp.models import User, Post  # Import models to register them
+
+# Point Alembic to the shared metadata
 target_metadata = AppBase.metadata
 ```
 
-This ensures migrations see all models that subclass `AppBase`.
-
-## Best practices
-
-- Always subclass `AppBase` for project ORM models. Do not create additional declarative bases.
-- Import `Mapped` and `mapped_column` from the same module to keep typing and configuration consistent.
-- Use SQLAlchemy 2.0-style typed mappings (`Mapped[T]` + `mapped_column`) for better editor and type-checker support.
-- Use `AppBase.metadata` wherever a `MetaData` reference is required (DDL, migrations, schema inspection).

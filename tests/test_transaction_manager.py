@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import Column, Integer, String, select
+from sqlalchemy import Integer, String, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncSession
 from pico_sqlalchemy import SessionManager

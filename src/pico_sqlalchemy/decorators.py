@@ -11,13 +11,14 @@ QUERY_META = "_pico_sqlalchemy_query_meta"
 
 
 def transactional(
+    _func: Optional[Callable[P, R]] = None,
     *,
     propagation: str = "REQUIRED",
     read_only: bool = False,
     isolation_level: Optional[str] = None,
     rollback_for: tuple[type[BaseException], ...] = (Exception,),
     no_rollback_for: tuple[type[BaseException], ...] = (),
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
+) -> Callable[[Callable[P, R]], Callable[P, R]] | Callable[P, R]:
     valid = {
         "REQUIRED",
         "REQUIRES_NEW",
@@ -41,6 +42,8 @@ def transactional(
         from .interceptor import TransactionalInterceptor
         return intercepted_by(TransactionalInterceptor)(func)
 
+    if _func is not None:
+        return decorator(_func)
     return decorator
 
 

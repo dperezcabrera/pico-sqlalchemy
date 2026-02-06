@@ -1,6 +1,6 @@
 import asyncio
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, select
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -103,7 +103,32 @@ def test_interceptor_transaction_block_allows_db_work():
 
         await check_user()
 
-    from sqlalchemy import select
-    import asyncio # Re-import asyncio just in case, though it's at the top.
-    
+    asyncio.run(runner())
+
+
+def test_transactional_without_parentheses():
+    """@transactional without parens uses REQUIRED defaults."""
+    manager = _new_manager()
+    interceptor = TransactionalInterceptor(manager)
+
+    class Dummy:
+        @transactional
+        def method(self):
+            return "unused"
+
+    meta = getattr(Dummy.method, "_pico_sqlalchemy_transactional_meta", None)
+    assert meta is not None
+    assert meta["propagation"] == "REQUIRED"
+    assert meta["read_only"] is False
+
+    ctx = type("Ctx", (), {"cls": Dummy, "name": "method"})()
+
+    async def call_next(c):
+        assert manager.get_current_session() is not None
+        return "bare-result"
+
+    async def runner():
+        result = await interceptor.invoke(ctx, call_next)
+        assert result == "bare-result"
+
     asyncio.run(runner())

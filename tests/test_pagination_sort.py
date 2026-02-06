@@ -116,6 +116,91 @@ async def test_sort_multiple(repo):
 @pytest.mark.asyncio
 async def test_security_invalid_column_raises_error(repo):
     req = PageRequest(page=0, size=10, sorts=[Sort(field="hacked_column", direction="ASC")])
-    
+
     with pytest.raises(ValueError, match="Invalid sort field"):
         await repo.find_all(req)
+
+
+class TestPageRequest:
+
+    def test_offset_first_page(self):
+        req = PageRequest(page=0, size=10)
+        assert req.offset == 0
+
+    def test_offset_second_page(self):
+        req = PageRequest(page=1, size=10)
+        assert req.offset == 10
+
+    def test_offset_large_page(self):
+        req = PageRequest(page=5, size=20)
+        assert req.offset == 100
+
+    def test_default_sorts_empty(self):
+        req = PageRequest(page=0, size=10)
+        assert req.sorts == []
+
+
+class TestPage:
+
+    def test_total_pages_exact_division(self):
+        page = Page(content=[], total_elements=30, page=0, size=10)
+        assert page.total_pages == 3
+
+    def test_total_pages_with_remainder(self):
+        page = Page(content=[], total_elements=31, page=0, size=10)
+        assert page.total_pages == 4
+
+    def test_total_pages_single_page(self):
+        page = Page(content=[], total_elements=5, page=0, size=10)
+        assert page.total_pages == 1
+
+    def test_total_pages_zero_elements(self):
+        page = Page(content=[], total_elements=0, page=0, size=10)
+        assert page.total_pages == 0
+
+    def test_total_pages_zero_size(self):
+        page = Page(content=[], total_elements=10, page=0, size=0)
+        assert page.total_pages == 0
+
+    def test_is_first_true(self):
+        page = Page(content=[], total_elements=30, page=0, size=10)
+        assert page.is_first is True
+
+    def test_is_first_false(self):
+        page = Page(content=[], total_elements=30, page=1, size=10)
+        assert page.is_first is False
+
+    def test_is_last_true(self):
+        page = Page(content=[], total_elements=30, page=2, size=10)
+        assert page.is_last is True
+
+    def test_is_last_false(self):
+        page = Page(content=[], total_elements=30, page=0, size=10)
+        assert page.is_last is False
+
+    def test_is_last_single_page(self):
+        page = Page(content=[], total_elements=5, page=0, size=10)
+        assert page.is_last is True
+
+
+class TestSort:
+
+    def test_valid_asc(self):
+        s = Sort(field="name", direction="ASC")
+        assert s.direction == "ASC"
+
+    def test_valid_desc(self):
+        s = Sort(field="name", direction="DESC")
+        assert s.direction == "DESC"
+
+    def test_default_direction(self):
+        s = Sort(field="name")
+        assert s.direction == "ASC"
+
+    def test_invalid_direction_raises(self):
+        with pytest.raises(ValueError, match="Invalid sort direction"):
+            Sort(field="name", direction="INVALID")
+
+    def test_sort_exported_from_package(self):
+        from pico_sqlalchemy import Sort as ExportedSort
+        assert ExportedSort is Sort
