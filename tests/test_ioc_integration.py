@@ -1,7 +1,7 @@
 import os
 import pytest
 import pytest_asyncio
-from sqlalchemy import Column, Integer, String, select
+from sqlalchemy import Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pico_ioc import init, configuration, DictSource, component

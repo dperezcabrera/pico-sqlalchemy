@@ -16,7 +16,7 @@
 
 It brings constructor-based dependency injection, **implicit transaction management**, and powerful **declarative queries** using pure Python and SQLAlchemy’s Async ORM.
 
-> 🐍 **Requires Python 3.10+**
+> 🐍 **Requires Python 3.11+**
 > 🚀 **Async-Native:** Built entirely on `AsyncSession` and `create_async_engine`.
 > ✨ **Zero-Boilerplate:** Repositories are transactional by default.
 > 🔍 **Declarative Queries:** Define SQL or expressions in decorators; the library executes them for you.
@@ -55,10 +55,11 @@ Most Python apps suffer from manual session handling (`async with session...`), 
 pip install pico-sqlalchemy
 ```
 
-You will also need an async driver (e.g., `aiosqlite` or `asyncpg`):
+You will also need an async database driver:
 
 ```bash
-pip install pico-ioc sqlalchemy aiosqlite
+pip install aiosqlite   # for SQLite
+pip install asyncpg     # for PostgreSQL
 ```
 
 -----
@@ -276,6 +277,19 @@ async def test_service():
 ```
 
 -----
+
+## 🤖 Claude Code Skills
+
+This project includes pre-designed skills for [Claude Code](https://claude.ai/claude-code), enabling AI-assisted development with pico-sqlalchemy patterns.
+
+| Skill | Command | Description |
+|-------|---------|-------------|
+| **Pico SQLAlchemy Repository** | `/pico-sqlalchemy` | Creates models, repositories and services with DI |
+| **Pico Test Generator** | `/pico-tests` | Generates tests for pico-framework components |
+
+See [Skills documentation](docs/skills.md) for full details and installation instructions.
+
+---
 
 ## 📝 License
 

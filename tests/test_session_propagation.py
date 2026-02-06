@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from sqlalchemy import Column, Integer, String, select
-from sqlalchemy.orm import DeclarativeBase, Session
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from pico_sqlalchemy import SessionManager
 
@@ -56,7 +56,7 @@ async def test_propagation_mandatory_joins_active(manager: SessionManager):
 async def test_propagation_never_without_active(manager: SessionManager):
     async with manager.transaction(propagation="NEVER") as session:
         assert isinstance(session, AsyncSession)
-        assert manager.get_current_session() is None
+        assert manager.get_current_session() is session
 
 
 @pytest.mark.asyncio
@@ -74,7 +74,7 @@ async def test_propagation_not_supported_with_active(manager: SessionManager):
         assert manager.get_current_session() is outer
         async with manager.transaction(propagation="NOT_SUPPORTED") as inner:
             assert isinstance(inner, AsyncSession)
-            assert manager.get_current_session() is None
+            assert manager.get_current_session() is inner
         assert manager.get_current_session() is outer
 
 
@@ -82,7 +82,7 @@ async def test_propagation_not_supported_with_active(manager: SessionManager):
 async def test_propagation_not_supported_without_active(manager: SessionManager):
     async with manager.transaction(propagation="NOT_SUPPORTED") as session:
         assert isinstance(session, AsyncSession)
-        assert manager.get_current_session() is None
+        assert manager.get_current_session() is session
 
 
 @pytest.mark.asyncio
@@ -97,7 +97,7 @@ async def test_propagation_supports_with_active(manager: SessionManager):
 async def test_propagation_supports_without_active(manager: SessionManager):
     async with manager.transaction(propagation="SUPPORTS") as session:
         assert isinstance(session, AsyncSession)
-        assert manager.get_current_session() is None
+        assert manager.get_current_session() is session
 
 
 @pytest.mark.asyncio

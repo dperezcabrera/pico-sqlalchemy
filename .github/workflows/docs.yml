@@ -6,16 +6,12 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
-      - 'src/**'
-      - 'pyproject.toml'
       - '.github/workflows/docs.yml'
   pull_request:
     branches: [ main, master ]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
-      - 'src/**'
-      - 'pyproject.toml'
   workflow_dispatch:
 
 permissions:
@@ -26,7 +22,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -45,19 +41,17 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e .
-          # INSTALACIÓN EXPLÍCITA: Aseguramos que mkdocs siempre esté presente
-          pip install mkdocs mkdocs-material "mkdocstrings[python]"
-          # Si existe un archivo extra de requirements, lo instalamos también
-          if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt; fi
-
-      - name: Prepare documentation files
-        run: |
-          cp README.md docs/index.md
-          cp CHANGELOG.md docs/CHANGELOG.md
+          pip install -r docs/requirements.txt
 
       - name: Validate documentation build
         run: mkdocs build --strict
+
+      - name: Check for broken links (best-effort)
+        run: |
+          pip install linkchecker
+          python -m http.server --directory site 8000 &
+          sleep 3
+          linkchecker http://127.0.0.1:8000 --check-extern || true
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -79,16 +73,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e .
-          # INSTALACIÓN EXPLÍCITA: Aseguramos que mkdocs siempre esté presente
-          pip install mkdocs mkdocs-material "mkdocstrings[python]"
-          # Si existe un archivo extra de requirements, lo instalamos también
-          if [ -f docs/requirements.txt ]; then pip install -r docs/requirements.txt; fi
-
-      - name: Prepare documentation files
-        run: |
-          cp README.md docs/index.md
-          cp CHANGELOG.md docs/CHANGELOG.md
+          pip install -r docs/requirements.txt
 
       - name: Build documentation
         run: |
@@ -105,7 +90,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Comment on commit
+      - name: Comment on commit (optional)
         if: success()
         uses: actions/github-script@v7
         with:
@@ -116,3 +101,4 @@ jobs:
               commit_sha: context.sha,
               body: `✅ Documentation deployed successfully!\n\n📚 View at: ${'${{ steps.deployment.outputs.page_url }}'}`
             })
+

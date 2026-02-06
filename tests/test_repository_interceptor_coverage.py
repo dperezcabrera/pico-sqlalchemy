@@ -17,6 +17,7 @@ from pico_sqlalchemy import (
     Page,
     RepositoryQueryInterceptor,
 )
+from pico_sqlalchemy.paging import Sort
 from pico_sqlalchemy.decorators import QUERY_META
 
 
@@ -143,7 +144,8 @@ async def test_unsupported_query_mode(container):
 async def test_expr_requires_entity(container):
     repo = await container.aget(RepoNoEntity)
     
-    with pytest.raises(RuntimeError, match="requires @repository\(entity=...\)"):
+    # Use raw string for regex to avoid SyntaxWarning
+    with pytest.raises(RuntimeError, match=r"requires @repository\(entity=...\)"):
         await repo.find_fail("test")
 
 
@@ -165,6 +167,18 @@ async def test_paged_sql_success(repo_entity):
     assert len(result.content) == 2
     assert result.content[0].name == "A"
     assert result.content[1].name == "B"
+
+
+@pytest.mark.asyncio
+async def test_paged_sql_with_sort_raises_error(repo_entity):
+    """
+    Ensures that providing sorts in SQL mode raises ValueError, 
+    preventing silent failure of sorting logic.
+    """
+    req = PageRequest(page=0, size=10, sorts=[Sort("name")])
+    
+    with pytest.raises(ValueError, match="Dynamic sorting via PageRequest is not supported in SQL mode"):
+        await repo_entity.find_sql_paged(page=req)
 
 
 @pytest.mark.asyncio
