@@ -1,18 +1,19 @@
+import asyncio
+
 import pytest
 import pytest_asyncio
-import asyncio
+from pico_ioc import DictSource, component, configuration, init
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from pico_ioc import init, configuration, DictSource, component
 from pico_sqlalchemy import (
     AppBase,
-    SessionManager,
-    repository,
-    query,
     DatabaseConfigurer,
-    PageRequest,
     Page,
+    PageRequest,
+    SessionManager,
+    query,
+    repository,
 )
 from pico_sqlalchemy.paging import Sort
 
@@ -43,6 +44,7 @@ class SetupDB(DatabaseConfigurer):
         async def run():
             async with engine.begin() as conn:
                 await conn.run_sync(self.base.metadata.create_all)
+
         asyncio.run(run())
 
 
@@ -50,10 +52,7 @@ class SetupDB(DatabaseConfigurer):
 def container(tmp_path):
     db_url = f"sqlite+aiosqlite:///{tmp_path}/sort_test.db"
     cfg = configuration(DictSource({"database": {"url": db_url}}))
-    return init(
-        modules=["pico_sqlalchemy", __name__],
-        config=cfg
-    )
+    return init(modules=["pico_sqlalchemy", __name__], config=cfg)
 
 
 @pytest_asyncio.fixture
@@ -61,11 +60,9 @@ async def repo(container):
     repo = await container.aget(SortUserRepository)
     sm = await container.aget(SessionManager)
     async with sm.transaction() as session:
-        session.add_all([
-            SortUser(name="Charlie", age=30),
-            SortUser(name="Alice", age=25),
-            SortUser(name="Bob", age=40)
-        ])
+        session.add_all(
+            [SortUser(name="Charlie", age=30), SortUser(name="Alice", age=25), SortUser(name="Bob", age=40)]
+        )
     return repo
 
 
@@ -73,7 +70,7 @@ async def repo(container):
 async def test_sort_asc(repo):
     req = PageRequest(page=0, size=10, sorts=[Sort(field="name", direction="ASC")])
     page = await repo.find_all(req)
-    
+
     assert len(page.content) == 3
     names = [u.name for u in page.content]
     assert names == ["Alice", "Bob", "Charlie"]
@@ -83,7 +80,7 @@ async def test_sort_asc(repo):
 async def test_sort_desc(repo):
     req = PageRequest(page=0, size=10, sorts=[Sort(field="age", direction="DESC")])
     page = await repo.find_all(req)
-    
+
     ages = [u.age for u in page.content]
     assert ages == [40, 30, 25]
 
@@ -94,19 +91,12 @@ async def test_sort_multiple(repo):
     async with sm.transaction() as session:
         session.add(SortUser(name="Alice", age=20))
 
-    req = PageRequest(
-        page=0, 
-        size=10, 
-        sorts=[
-            Sort(field="name", direction="ASC"),
-            Sort(field="age", direction="DESC")
-        ]
-    )
+    req = PageRequest(page=0, size=10, sorts=[Sort(field="name", direction="ASC"), Sort(field="age", direction="DESC")])
     page = await repo.find_all(req)
-    
+
     assert len(page.content) == 4
     users = [(u.name, u.age) for u in page.content]
-    
+
     assert users[0] == ("Alice", 25)
     assert users[1] == ("Alice", 20)
     assert users[2] == ("Bob", 40)
@@ -122,7 +112,6 @@ async def test_security_invalid_column_raises_error(repo):
 
 
 class TestPageRequest:
-
     def test_offset_first_page(self):
         req = PageRequest(page=0, size=10)
         assert req.offset == 0
@@ -141,7 +130,6 @@ class TestPageRequest:
 
 
 class TestPage:
-
     def test_total_pages_exact_division(self):
         page = Page(content=[], total_elements=30, page=0, size=10)
         assert page.total_pages == 3
@@ -184,7 +172,6 @@ class TestPage:
 
 
 class TestSort:
-
     def test_valid_asc(self):
         s = Sort(field="name", direction="ASC")
         assert s.direction == "ASC"
@@ -203,4 +190,5 @@ class TestSort:
 
     def test_sort_exported_from_package(self):
         from pico_sqlalchemy import Sort as ExportedSort
+
         assert ExportedSort is Sort

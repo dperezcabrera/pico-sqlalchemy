@@ -1,8 +1,10 @@
-import pytest
 import asyncio
+
+import pytest
 from sqlalchemy import Column, Integer, String, select
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm import DeclarativeBase
+
 from pico_sqlalchemy import SessionManager
 
 
@@ -139,7 +141,7 @@ async def test_rollback_for_default_rolls_back(manager: SessionManager):
             raise ValueError("boom")
     except ValueError:
         pass
-    
+
     async with manager.transaction(read_only=True) as session:
         stmt = select(TxUser).order_by(TxUser.username)
         users = list((await session.scalars(stmt)).all())

@@ -5,7 +5,7 @@ site_url: https://dperezcabrera.github.io/pico-sqlalchemy/
 repo_name: dperezcabrera/pico-sqlalchemy
 repo_url: https://github.com/dperezcabrera/pico-sqlalchemy
 edit_uri: edit/main/docs/
-copyright: Copyright &copy; 2025 Pico-SQLAlchemy
+copyright: Copyright &copy; 2025–2026 Pico-SQLAlchemy
 
 strict: true
 

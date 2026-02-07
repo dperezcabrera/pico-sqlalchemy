@@ -1,22 +1,22 @@
 import asyncio
+
 import pytest
 import pytest_asyncio
+from pico_ioc import DictSource, component, configuration, init
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import Mapped, mapped_column
 
-from pico_ioc import init, configuration, DictSource, component
-
 from pico_sqlalchemy import (
     AppBase,
-    SessionManager,
-    transactional,
-    repository,
-    query,
-    get_session,
-    PageRequest,
-    Page,
     DatabaseConfigurer,
+    Page,
+    PageRequest,
+    SessionManager,
+    get_session,
+    query,
+    repository,
+    transactional,
 )
 
 
@@ -75,16 +75,8 @@ class UserRepository:
 @pytest.fixture
 def container(tmp_path):
     db_url = f"sqlite+aiosqlite:///{tmp_path}/test_repo_query.db"
-    src = DictSource({
-        "database": {
-            "url": db_url,
-            "echo": False
-        }
-    })
-    return init(
-        modules=["pico_sqlalchemy", __name__],
-        config=configuration(src)
-    )
+    src = DictSource({"database": {"url": db_url, "echo": False}})
+    return init(modules=["pico_sqlalchemy", __name__], config=configuration(src))
 
 
 @pytest_asyncio.fixture
