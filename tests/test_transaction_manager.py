@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy import Integer, String, select
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
 from pico_sqlalchemy import SessionManager
 
 
@@ -18,7 +19,7 @@ class TxUser(Base):
 @pytest.mark.asyncio
 async def test_commit_and_rollback():
     manager = SessionManager(url="sqlite+aiosqlite:///:memory:", echo=False)
-    
+
     async with manager.engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

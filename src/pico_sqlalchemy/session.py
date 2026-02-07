@@ -1,7 +1,8 @@
 import contextvars
 from contextlib import asynccontextmanager
-from typing import Optional, Dict, Any, AsyncGenerator
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
+from typing import Any, AsyncGenerator, Dict, Optional
+
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 _tx_context: contextvars.ContextVar["TransactionContext | None"] = contextvars.ContextVar(
@@ -177,9 +178,7 @@ class SessionManager:
         """Start a new transaction with the given parameters."""
         session = self.create_session()
         if isolation_level:
-            await session.connection(
-                execution_options={"isolation_level": isolation_level}
-            )
+            await session.connection(execution_options={"isolation_level": isolation_level})
         ctx = TransactionContext(session)
         token = _tx_context.set(ctx)
         try:

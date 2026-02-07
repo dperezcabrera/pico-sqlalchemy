@@ -5,8 +5,8 @@ from pico_ioc import MethodCtx, MethodInterceptor, component
 from sqlalchemy import text
 
 from .decorators import QUERY_META, REPOSITORY_META
-from .session import SessionManager, get_session
 from .paging import Page, PageRequest
+from .session import SessionManager, get_session
 
 
 def _extract_page_request(params: dict[str, Any], paged: bool) -> PageRequest | None:
@@ -171,9 +171,7 @@ class RepositoryQueryInterceptor(MethodInterceptor):
     def _validate_entity(self, entity: Any) -> None:
         """Validate that entity is properly configured."""
         if entity is None or not hasattr(entity, "__tablename__"):
-            raise RuntimeError(
-                "@query with expr requires @repository(entity=...) and an entity with __tablename__"
-            )
+            raise RuntimeError("@query with expr requires @repository(entity=...) and an entity with __tablename__")
 
     def _build_base_sql(self, entity: Any, expr: str | None) -> str:
         """Build base SQL query from entity and expression."""

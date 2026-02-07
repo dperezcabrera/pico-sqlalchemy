@@ -1,24 +1,25 @@
-import pytest
-import pytest_asyncio
 import asyncio
 from typing import Any
 from unittest.mock import MagicMock
+
+import pytest
+import pytest_asyncio
+from pico_ioc import DictSource, MethodCtx, component, configuration, init
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from pico_ioc import init, configuration, DictSource, MethodCtx, component
 from pico_sqlalchemy import (
     AppBase,
-    SessionManager,
-    repository,
-    query,
     DatabaseConfigurer,
-    PageRequest,
     Page,
+    PageRequest,
     RepositoryQueryInterceptor,
+    SessionManager,
+    query,
+    repository,
 )
-from pico_sqlalchemy.paging import Sort
 from pico_sqlalchemy.decorators import QUERY_META
+from pico_sqlalchemy.paging import Sort
 
 
 class CovUser(AppBase):
@@ -68,6 +69,7 @@ class SetupDB(DatabaseConfigurer):
         async def run():
             async with engine.begin() as conn:
                 await conn.run_sync(self.base.metadata.create_all)
+
         asyncio.run(run())
 
 
@@ -75,11 +77,8 @@ class SetupDB(DatabaseConfigurer):
 def container(tmp_path):
     db_url = f"sqlite+aiosqlite:///{tmp_path}/coverage.db"
     cfg = configuration(DictSource({"database": {"url": db_url}}))
-    
-    return init(
-        modules=["pico_sqlalchemy", __name__],
-        config=cfg
-    )
+
+    return init(modules=["pico_sqlalchemy", __name__], config=cfg)
 
 
 @pytest_asyncio.fixture
@@ -87,11 +86,7 @@ async def repo_entity(container):
     repo = await container.aget(RepoWithEntity)
     sm = await container.aget(SessionManager)
     async with sm.transaction() as session:
-        session.add_all([
-            CovUser(name="A"),
-            CovUser(name="B"),
-            CovUser(name="C")
-        ])
+        session.add_all([CovUser(name="A"), CovUser(name="B"), CovUser(name="C")])
     return repo
 
 
@@ -103,13 +98,13 @@ async def test_meta_is_none_pass_through(container):
     class Dummy:
         async def method(self):
             return "original_result"
-    
+
     ctx = MagicMock(spec=MethodCtx)
     ctx.cls = Dummy
     ctx.name = "method"
     ctx.args = ()
     ctx.kwargs = {}
-    
+
     async def call_next(c):
         return await c.cls().method()
 
@@ -121,19 +116,22 @@ async def test_meta_is_none_pass_through(container):
 async def test_unsupported_query_mode(container):
     sm = await container.aget(SessionManager)
     interceptor = RepositoryQueryInterceptor(sm)
-    
-    async def dummy_func(self): pass
+
+    async def dummy_func(self):
+        pass
+
     setattr(dummy_func, QUERY_META, {"mode": "invalid_mode"})
-    
+
     ctx = MagicMock(spec=MethodCtx)
     ctx.cls = type("C", (), {})
     ctx.name = "dummy_func"
     ctx.args = ()
     ctx.kwargs = {}
-    
+
     setattr(ctx.cls, "dummy_func", dummy_func)
-    
-    async def call_next(c): pass
+
+    async def call_next(c):
+        pass
 
     with pytest.raises(RuntimeError, match="Unsupported query mode"):
         async with sm.transaction():
@@ -143,7 +141,7 @@ async def test_unsupported_query_mode(container):
 @pytest.mark.asyncio
 async def test_expr_requires_entity(container):
     repo = await container.aget(RepoNoEntity)
-    
+
     # Use raw string for regex to avoid SyntaxWarning
     with pytest.raises(RuntimeError, match=r"requires @repository\(entity=...\)"):
         await repo.find_fail("test")
@@ -159,7 +157,7 @@ async def test_paged_sql_type_error(repo_entity):
 async def test_paged_sql_success(repo_entity):
     req = PageRequest(page=0, size=2)
     result = await repo_entity.find_sql_paged(page=req)
-    
+
     assert isinstance(result, Page)
     assert result.total_elements == 3
     assert result.size == 2
@@ -172,11 +170,11 @@ async def test_paged_sql_success(repo_entity):
 @pytest.mark.asyncio
 async def test_paged_sql_with_sort_raises_error(repo_entity):
     """
-    Ensures that providing sorts in SQL mode raises ValueError, 
+    Ensures that providing sorts in SQL mode raises ValueError,
     preventing silent failure of sorting logic.
     """
     req = PageRequest(page=0, size=10, sorts=[Sort("name")])
-    
+
     with pytest.raises(ValueError, match="Dynamic sorting via PageRequest is not supported in SQL mode"):
         await repo_entity.find_sql_paged(page=req)
 

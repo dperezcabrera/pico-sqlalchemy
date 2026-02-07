@@ -1,7 +1,9 @@
 import inspect
 from typing import Any, Callable
+
 from pico_ioc import MethodCtx, MethodInterceptor, component
-from .decorators import TRANSACTIONAL_META, QUERY_META, REPOSITORY_META
+
+from .decorators import QUERY_META, REPOSITORY_META, TRANSACTIONAL_META
 from .session import SessionManager
 
 
@@ -18,7 +20,7 @@ class TransactionalInterceptor(MethodInterceptor):
             is_query = getattr(func, QUERY_META, None) is not None
             repo_meta = getattr(ctx.cls, REPOSITORY_META, None)
             is_repository = repo_meta is not None
-            
+
             if is_query:
                 meta = {
                     "propagation": "REQUIRED",

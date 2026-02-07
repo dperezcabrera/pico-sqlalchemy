@@ -1,13 +1,17 @@
 from typing import List
-from pico_ioc import configure, factory, provides, component
+
+from pico_ioc import component, configure, factory, provides
+
 from .config import DatabaseConfigurer, DatabaseSettings
 from .session import SessionManager
+
 
 def _priority_of(obj):
     try:
         return int(getattr(obj, "priority", 0))
     except Exception:
         return 0
+
 
 @component
 class PicoSqlAlchemyLifecycle:
@@ -18,14 +22,12 @@ class PicoSqlAlchemyLifecycle:
         configurers: List[DatabaseConfigurer],
     ) -> None:
         valid = [
-            c
-            for c in configurers
-            if isinstance(c, DatabaseConfigurer)
-            and callable(getattr(c, "configure", None))
+            c for c in configurers if isinstance(c, DatabaseConfigurer) and callable(getattr(c, "configure", None))
         ]
         ordered = sorted(valid, key=_priority_of)
         for cfg in ordered:
             cfg.configure(session_manager.engine)
+
 
 @factory
 class SqlAlchemyFactory:

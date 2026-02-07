@@ -1,8 +1,8 @@
 import asyncio
 
 from sqlalchemy import Column, Integer, String, select
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.orm import DeclarativeBase
 
 from pico_sqlalchemy import SessionManager, TransactionalInterceptor, transactional
 

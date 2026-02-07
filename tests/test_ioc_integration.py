@@ -1,20 +1,20 @@
 import os
+
 import pytest
 import pytest_asyncio
+from pico_ioc import DictSource, component, configuration, init
 from sqlalchemy import Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pico_ioc import init, configuration, DictSource, component
-
 from pico_sqlalchemy import (
     AppBase,
-    Mapped,
-    mapped_column,
-    SessionManager,
-    transactional,
-    repository,
-    get_session,
     DatabaseConfigurer,
+    Mapped,
+    SessionManager,
+    get_session,
+    mapped_column,
+    repository,
+    transactional,
 )
 
 
@@ -161,9 +161,7 @@ def session_manager(container):
 
 
 @pytest.mark.asyncio
-async def test_repository_commit(
-    user_service: UserService, session_manager: SessionManager
-):
+async def test_repository_commit(user_service: UserService, session_manager: SessionManager):
     created = await user_service.create_user("alice", "alice@example.com")
     assert created.id is not None
 
@@ -176,9 +174,7 @@ async def test_repository_commit(
 
 
 @pytest.mark.asyncio
-async def test_repository_rollback(
-    user_service: UserService, session_manager: SessionManager
-):
+async def test_repository_rollback(user_service: UserService, session_manager: SessionManager):
     try:
         await user_service.create_two_and_fail()
     except RuntimeError:
