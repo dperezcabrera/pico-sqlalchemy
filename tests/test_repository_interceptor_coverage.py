@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -8,9 +7,9 @@ from pico_ioc import DictSource, MethodCtx, component, configuration, init
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from conftest import SetupDBBase
 from pico_sqlalchemy import (
     AppBase,
-    DatabaseConfigurer,
     Page,
     PageRequest,
     RepositoryQueryInterceptor,
@@ -61,16 +60,8 @@ class RepoWithEntity:
 
 
 @component
-class SetupDB(DatabaseConfigurer):
-    def __init__(self, base: AppBase):
-        self.base = base
-
-    def configure(self, engine):
-        async def run():
-            async with engine.begin() as conn:
-                await conn.run_sync(self.base.metadata.create_all)
-
-        asyncio.run(run())
+class SetupDB(SetupDBBase):
+    pass
 
 
 @pytest.fixture
