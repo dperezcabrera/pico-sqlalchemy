@@ -1,14 +1,12 @@
-import asyncio
-
 import pytest
 import pytest_asyncio
 from pico_ioc import DictSource, component, configuration, init
 from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from conftest import SetupDBBase
 from pico_sqlalchemy import (
     AppBase,
-    DatabaseConfigurer,
     Page,
     PageRequest,
     SessionManager,
@@ -36,16 +34,8 @@ class SortUserRepository:
 
 
 @component
-class SetupDB(DatabaseConfigurer):
-    def __init__(self, base: AppBase):
-        self.base = base
-
-    def configure(self, engine):
-        async def run():
-            async with engine.begin() as conn:
-                await conn.run_sync(self.base.metadata.create_all)
-
-        asyncio.run(run())
+class SetupDB(SetupDBBase):
+    pass
 
 
 @pytest.fixture

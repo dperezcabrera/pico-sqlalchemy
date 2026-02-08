@@ -1,15 +1,9 @@
-import asyncio
-
 import pytest
 from sqlalchemy import Column, Integer, String, select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from conftest import Base, new_session_manager
 from pico_sqlalchemy import SessionManager
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class TxUser(Base):
@@ -20,14 +14,7 @@ class TxUser(Base):
 
 @pytest.fixture
 def manager():
-    m = SessionManager(url="sqlite+aiosqlite:///:memory:", echo=False)
-
-    async def create_tables(engine: AsyncEngine):
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-    asyncio.run(create_tables(m.engine))
-    return m
+    return new_session_manager(Base)
 
 
 async def _count_users(manager: SessionManager) -> int:

@@ -1,13 +1,10 @@
 import pytest
 from sqlalchemy import Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
+from conftest import Base
 from pico_sqlalchemy import SessionManager
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class TxUser(Base):

@@ -1,14 +1,9 @@
 import asyncio
 
 from sqlalchemy import Column, Integer, String, select
-from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.orm import DeclarativeBase
 
+from conftest import Base, new_session_manager
 from pico_sqlalchemy import SessionManager, TransactionalInterceptor, transactional
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class InterceptorUser(Base):
@@ -17,19 +12,8 @@ class InterceptorUser(Base):
     name = Column(String(50), unique=True, nullable=False)
 
 
-def _new_manager() -> SessionManager:
-    manager = SessionManager(url="sqlite+aiosqlite:///:memory:", echo=False)
-
-    async def create_tables(engine: AsyncEngine):
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-    asyncio.run(create_tables(manager.engine))
-    return manager
-
-
 def test_interceptor_without_transactional_metadata_non_awaitable_result():
-    manager = _new_manager()
+    manager = new_session_manager(Base)
     interceptor = TransactionalInterceptor(manager)
 
     class Dummy:
@@ -50,7 +34,7 @@ def test_interceptor_without_transactional_metadata_non_awaitable_result():
 
 
 def test_interceptor_with_transactional_metadata_and_awaitable_result():
-    manager = _new_manager()
+    manager = new_session_manager(Base)
     interceptor = TransactionalInterceptor(manager)
 
     class Dummy:
@@ -72,7 +56,7 @@ def test_interceptor_with_transactional_metadata_and_awaitable_result():
 
 
 def test_interceptor_transaction_block_allows_db_work():
-    manager = _new_manager()
+    manager = new_session_manager(Base)
     interceptor = TransactionalInterceptor(manager)
 
     class Dummy:
@@ -108,7 +92,7 @@ def test_interceptor_transaction_block_allows_db_work():
 
 def test_transactional_without_parentheses():
     """@transactional without parens uses REQUIRED defaults."""
-    manager = _new_manager()
+    manager = new_session_manager(Base)
     interceptor = TransactionalInterceptor(manager)
 
     class Dummy:
