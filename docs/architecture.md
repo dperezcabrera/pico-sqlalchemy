@@ -359,3 +359,106 @@ Avoid `pico-sqlalchemy` if:
 - You are not using `asyncio` or the SQLAlchemy async extensions
 - You prefer manual session management
 - You only use SQLAlchemy Core with no ORM session lifecycle
+
+---
+
+## 12. Diagrams (Mermaid)
+
+### Transaction Propagation Decision Flow
+
+```mermaid
+flowchart TD
+    START["transaction(propagation=?)"] --> CHECK{propagation}
+
+    CHECK -->|REQUIRED| REQ_HAS{Active tx?}
+    REQ_HAS -->|Yes| REQ_JOIN["Join existing session"]
+    REQ_HAS -->|No| REQ_NEW["Start new transaction"]
+
+    CHECK -->|REQUIRES_NEW| RN_HAS{Active tx?}
+    RN_HAS -->|Yes| RN_SUSPEND["Suspend outer tx<br/>(_tx_context = None)"]
+    RN_HAS -->|No| RN_SKIP["--"]
+    RN_SUSPEND --> RN_NEW["Start new transaction"]
+    RN_SKIP --> RN_NEW
+    RN_NEW --> RN_RESTORE["Restore outer tx"]
+
+    CHECK -->|MANDATORY| M_HAS{Active tx?}
+    M_HAS -->|Yes| M_JOIN["Join existing session"]
+    M_HAS -->|No| M_ERR["RuntimeError:<br/>MANDATORY propagation<br/>requires active transaction"]
+
+    CHECK -->|NEVER| N_HAS{Active tx?}
+    N_HAS -->|Yes| N_ERR["RuntimeError:<br/>NEVER propagation<br/>forbids active transaction"]
+    N_HAS -->|No| N_SESSION["Yield non-transactional session"]
+
+    CHECK -->|NOT_SUPPORTED| NS_HAS{Active tx?}
+    NS_HAS -->|Yes| NS_SUSPEND["Suspend outer tx"]
+    NS_HAS -->|No| NS_SKIP["--"]
+    NS_SUSPEND --> NS_SESSION["Yield non-transactional session"]
+    NS_SKIP --> NS_SESSION
+    NS_SESSION --> NS_RESTORE["Restore outer tx (if suspended)"]
+
+    CHECK -->|SUPPORTS| S_HAS{Active tx?}
+    S_HAS -->|Yes| S_JOIN["Join existing session"]
+    S_HAS -->|No| S_SESSION["Yield non-transactional session"]
+```
+
+### Interceptor Chain for `@query`
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant TI as TransactionalInterceptor
+    participant RQI as RepositoryQueryInterceptor
+    participant SM as SessionManager
+    participant DB as Database
+
+    Caller->>TI: invoke(ctx, call_next)
+    TI->>TI: Detect @query meta (read_only=True)
+    TI->>SM: transaction(REQUIRED, read_only=True)
+    SM-->>TI: AsyncSession (new or joined)
+
+    TI->>RQI: call_next(ctx)
+    RQI->>RQI: Detect @query meta
+    RQI->>RQI: Bind method params to dict
+    RQI->>SM: get_session(manager)
+    SM-->>RQI: AsyncSession
+
+    alt expr mode
+        RQI->>RQI: Build SELECT * FROM table WHERE expr
+        RQI->>RQI: Validate sort fields against entity columns
+    else sql mode
+        RQI->>RQI: Use raw SQL (reject dynamic sorts)
+    end
+
+    alt paged=True
+        RQI->>DB: SELECT COUNT(*) FROM (query)
+        DB-->>RQI: total_elements
+        RQI->>DB: query LIMIT :_limit OFFSET :_offset
+        DB-->>RQI: rows
+        RQI-->>TI: Page(content, total, page, size)
+    else paged=False
+        RQI->>DB: Execute query
+        DB-->>RQI: rows
+        RQI-->>TI: rows or single row (unique)
+    end
+
+    TI-->>Caller: result
+    Note over TI,SM: Session closed (read_only: no commit)
+```
+
+### Startup Sequence
+
+```mermaid
+flowchart TD
+    A["pico_ioc.init(modules=['pico_sqlalchemy', ...])"] --> B["Container scans modules"]
+    B --> C["DatabaseSettings populated<br/>from config prefix 'database'"]
+    C --> D["SqlAlchemyFactory instantiated"]
+    D --> E["create_session_manager(settings)<br/>creates AsyncEngine + session factory"]
+    E --> F["SessionManager registered<br/>as singleton (no @component)"]
+    F --> G["TransactionalInterceptor registered<br/>(@component, injects SessionManager)"]
+    G --> H["RepositoryQueryInterceptor registered<br/>(@component, injects SessionManager)"]
+    H --> I["PicoSqlAlchemyLifecycle.setup_database()"]
+    I --> J["Collect all DatabaseConfigurer beans"]
+    J --> K["Sort by priority (ascending)"]
+    K --> L["Call configure(engine) on each"]
+    L --> M["Application ready"]
+```
