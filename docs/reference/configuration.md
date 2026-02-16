@@ -1,23 +1,23 @@
 # Database Configuration
 
-This reference covers the database configuration extension points exposed by the project: the `DatabaseConfigurer` protocol and the `DatabaseSettings` dataclass. Together, they provide a consistent way to define default database connection settings and to hook into the database engine initialization to apply project-specific configuration.
+This reference covers the database configuration extension points: the `DatabaseSettings` dataclass and the `DatabaseConfigurer` protocol. Together, they provide a consistent way to define default database connection settings and to hook into the database engine initialization to apply project-specific configuration.
 
 ## What is this?
 
 - `DatabaseSettings` (dataclass)
-  - Holds the database connection settings for the project.
-  - Annotated with pico_ioc metadata so it can be provided via dependency injection.
+  - A `@configured` dataclass that holds the database connection settings.
+  - Automatically loaded from configuration sources (YAML, env, dict) via the `database` prefix.
   - Acts as the single source of truth for connection parameters (URL, pooling, echo).
 
 - `DatabaseConfigurer` (protocol)
   - A small extension point for customizing the database engine after it is created.
-  - Methods:
-    - `priority(self)`: Returns a numeric value used to order multiple configurers.
+  - Members:
+    - `priority`: int attribute (or property) used to order multiple configurers. Lower numbers run first.
     - `configure(self, engine)`: Applies configuration to the database engine.
 
 ## 1. DatabaseSettings
 
-The `DatabaseSettings` class is a standard Python dataclass used to configure the `SessionManager`. You should register an instance of this class in your container.
+The `DatabaseSettings` class is a `@configured` dataclass. It is automatically populated from your configuration source and injected where needed by the container.
 
 ### Supported Fields
 
@@ -33,45 +33,53 @@ The following fields map directly to the underlying SQLAlchemy `create_async_eng
 
 > **Note:** `pool_size`, `pool_pre_ping`, and `pool_recycle` are ignored if using SQLite with `:memory:`.
 
-### Example Registration
+### Providing Settings
 
-Create and register a `DatabaseSettings` instance that reflects your environment.
+Settings are loaded automatically from a configuration source with the `database` prefix:
 
 ```python
-from pico_ioc import Container
-from pico_sqlalchemy import DatabaseSettings
+from pico_ioc import init, configuration, DictSource
 
-container = Container()
+config = configuration(DictSource({
+    "database": {
+        "url": "postgresql+asyncpg://user:pass@localhost:5432/dbname",
+        "echo": True,
+        "pool_size": 10,
+    }
+}))
 
-# Construct settings using flat arguments (not a dict)
-settings = DatabaseSettings(
-    url="postgresql+asyncpg://user:pass@localhost:5432/dbname",
-    echo=True,
-    pool_size=10,
-    pool_pre_ping=True
-)
+container = init(modules=["pico_sqlalchemy", "myapp"], config=config)
+```
 
-# Make the settings available for injection
-container.register_instance(DatabaseSettings, settings)
-````
+Or via YAML:
 
-## 2\. DatabaseConfigurer
+```yaml
+# application.yaml
+database:
+  url: postgresql+asyncpg://user:pass@localhost:5432/dbname
+  echo: false
+  pool_size: 10
+  pool_pre_ping: true
+  pool_recycle: 3600
+```
+
+## 2. DatabaseConfigurer
 
 Create one or more classes that implement the `DatabaseConfigurer` protocol to apply engine-level behavior customization.
 
-**Ordering:** Configurers are executed in **Ascending Order** based on their priority. Lower numbers run first.
+**Ordering:** Configurers are executed in **ascending order** based on their `priority` attribute. Lower numbers run first.
 
 ### Example: Enable SQL Echo (Dynamic)
 
 ```python
+from pico_ioc import component
 from pico_sqlalchemy import DatabaseConfigurer
 
+@component
 class EnableSqlEcho(DatabaseConfigurer):
-    def priority(self) -> int:
-        return 10  # Runs early
+    priority = 10  # Runs early
 
     def configure(self, engine):
-        # Mutate the engine if supported, or attach listeners
         engine.echo = True
 ```
 
@@ -79,28 +87,47 @@ class EnableSqlEcho(DatabaseConfigurer):
 
 ```python
 from sqlalchemy import event
+from pico_ioc import component
 from pico_sqlalchemy import DatabaseConfigurer
 
+@component
 class SQLitePragmaConfigurer(DatabaseConfigurer):
-    def priority(self) -> int:
-        return 50  # Runs after basic setup
+    priority = 50  # Runs after basic setup
 
     def configure(self, engine):
-        @event.listens_for(engine, "connect")
+        @event.listens_for(engine.sync_engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.close()
 ```
 
-## 3\. Initialization Logic
+### Example: Create Tables on Startup
 
-When the `SessionManager` starts up (via `SqlAlchemyFactory`), it performs the following:
+```python
+import asyncio
+from pico_ioc import component
+from pico_sqlalchemy import DatabaseConfigurer, AppBase
 
-1.  Creates the `AsyncEngine` using values from `DatabaseSettings`.
-2.  Resolves all components implementing `DatabaseConfigurer`.
-3.  Sorts them by `priority()` (Ascending).
-4.  Calls `configure(engine)` on each one sequentially.
+@component
+class TableCreationConfigurer(DatabaseConfigurer):
+    priority = 100
+
+    def __init__(self, base: AppBase):
+        self.base = base
+
+    def configure(self, engine):
+        async def init_schema():
+            async with engine.begin() as conn:
+                await conn.run_sync(self.base.metadata.create_all)
+        asyncio.run(init_schema())
+```
+
+## 3. Initialization Logic
+
+The startup sequence involves two separate components:
+
+1. **`SqlAlchemyFactory`** creates the `SessionManager` singleton from `DatabaseSettings` (creates the `AsyncEngine` and session factory).
+2. **`PicoSqlAlchemyLifecycle`** (via `@configure`) collects all `DatabaseConfigurer` implementations, sorts them by `priority` (ascending), and calls `configure(engine)` on each.
 
 This ensures that your specific database tuning (like pragmas or connection pool listeners) is applied reliably before the application starts accepting traffic.
-
