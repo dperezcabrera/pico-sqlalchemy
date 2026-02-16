@@ -7,7 +7,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 from pico_sqlalchemy import AppBase, DatabaseConfigurer, SessionManager
 
-
 # ── Shared declarative base for standalone SessionManager tests ──
 
 
