@@ -1,3 +1,26 @@
+"""pico-sqlalchemy -- SQLAlchemy async integration for pico-ioc.
+
+Provides Spring-style declarative transactions, a repository pattern with
+automatic query execution, and pagination support.  All components are
+auto-discovered when ``"pico_sqlalchemy"`` is listed in the ``modules``
+argument of ``pico_ioc.init()`` (or via the ``pico_boot.modules`` entry
+point).
+
+Typical usage::
+
+    from pico_ioc import init, configuration, DictSource
+    from pico_sqlalchemy import (
+        repository, query, transactional,
+        SessionManager, get_session, AppBase,
+        Page, PageRequest, Sort,
+    )
+
+    config = configuration(DictSource({
+        "database": {"url": "sqlite+aiosqlite:///:memory:"}
+    }))
+    container = init(modules=["pico_sqlalchemy", "my_app"], config=config)
+"""
+
 from .base import AppBase, Mapped, mapped_column
 from .config import DatabaseConfigurer, DatabaseSettings
 from .decorators import query, repository, transactional

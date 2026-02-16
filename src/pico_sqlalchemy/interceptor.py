@@ -1,3 +1,18 @@
+"""AOP interceptor that manages transaction boundaries.
+
+``TransactionalInterceptor`` is the first link in the interceptor chain
+for every ``@transactional``, ``@repository``, and ``@query`` method.
+It inspects decorator metadata to determine the correct propagation mode
+and opens (or joins) a transaction via ``SessionManager.transaction()``
+before delegating to the next interceptor or the original method body.
+
+Priority resolution order (highest wins):
+
+1. ``@transactional`` metadata (explicit, user-defined).
+2. ``@query`` metadata (implicit ``read_only=True``).
+3. ``@repository`` metadata (implicit ``read_only=False``).
+"""
+
 import inspect
 from typing import Any, Callable
 
@@ -9,10 +24,43 @@ from .session import SessionManager
 
 @component
 class TransactionalInterceptor(MethodInterceptor):
+    """Opens or joins a transaction for intercepted methods.
+
+    Registered as a ``@component`` and injected with a ``SessionManager``.
+    Applied to methods via ``@intercepted_by(TransactionalInterceptor)``
+    (which is done automatically by the ``@transactional``,
+    ``@repository``, and ``@query`` decorators).
+
+    The interceptor determines the transaction configuration from
+    decorator metadata in the following priority order:
+
+    1. ``@transactional`` (highest) -- user-defined propagation/read_only.
+    2. ``@query`` -- ``REQUIRED`` propagation, ``read_only=True``.
+    3. ``@repository`` -- ``REQUIRED`` propagation, ``read_only=False``.
+
+    If none of these markers are present, the method is invoked directly
+    without opening a transaction.
+
+    Args:
+        session_manager: The ``SessionManager`` singleton used to open
+            or join transactions.
+    """
+
     def __init__(self, session_manager: SessionManager):
         self.sm = session_manager
 
     async def invoke(self, ctx: MethodCtx, call_next: Callable[[MethodCtx], Any]) -> Any:
+        """Intercept the method call and wrap it in a transaction if needed.
+
+        Args:
+            ctx: The AOP method context containing target class, method
+                name, and arguments.
+            call_next: Callback to invoke the next interceptor or the
+                original method.
+
+        Returns:
+            The return value of the intercepted method.
+        """
         func = getattr(ctx.cls, ctx.name, None)
         meta = getattr(func, TRANSACTIONAL_META, None)
 
