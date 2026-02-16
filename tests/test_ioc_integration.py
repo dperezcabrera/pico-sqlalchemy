@@ -6,9 +6,9 @@ from pico_ioc import DictSource, component, configuration, init
 from sqlalchemy import Integer, String, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from conftest import SetupDBBase
 from pico_sqlalchemy import (
     AppBase,
-    DatabaseConfigurer,
     Mapped,
     SessionManager,
     get_session,
@@ -26,20 +26,8 @@ class User(AppBase):
 
 
 @component
-class TableCreationConfigurer(DatabaseConfigurer):
-    priority = 10
-
-    def __init__(self, base: AppBase):
-        self.base = base
-
-    def configure(self, engine):
-        async def setup(engine):
-            async with engine.begin() as conn:
-                await conn.run_sync(self.base.metadata.create_all)
-
-        import asyncio
-
-        asyncio.run(setup(engine))
+class SetupDB(SetupDBBase):
+    pass
 
 
 @repository
