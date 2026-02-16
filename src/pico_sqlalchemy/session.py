@@ -117,12 +117,12 @@ class SessionManager:
     async def _propagation_not_supported(self, current, tx_params):
         """NOT_SUPPORTED: Suspend current transaction if exists."""
         if current is not None:
-            token = _tx_context.set(None)
+            _tx_context.set(None)
             try:
                 async for session in self._yield_non_transactional_session():
                     yield session
             finally:
-                _tx_context.reset(token)
+                _tx_context.set(current)
         else:
             async for session in self._yield_non_transactional_session():
                 yield session
@@ -138,12 +138,12 @@ class SessionManager:
     async def _propagation_requires_new(self, current, tx_params):
         """REQUIRES_NEW: Always create new transaction."""
         if current is not None:
-            parent_token = _tx_context.set(None)
+            _tx_context.set(None)
             try:
                 async with self._start_transaction(**tx_params) as session:
                     yield session
             finally:
-                _tx_context.reset(parent_token)
+                _tx_context.set(current)
         else:
             async with self._start_transaction(**tx_params) as session:
                 yield session
@@ -159,12 +159,12 @@ class SessionManager:
     async def _yield_non_transactional_session(self):
         """Yield a non-transactional session."""
         session = self.create_session()
-        ctx = TransactionContext(session)
-        token = _tx_context.set(ctx)
+        old = _tx_context.get()
+        _tx_context.set(TransactionContext(session))
         try:
             yield session
         finally:
-            _tx_context.reset(token)
+            _tx_context.set(old)
             await session.close()
 
     @asynccontextmanager
@@ -179,8 +179,8 @@ class SessionManager:
         session = self.create_session()
         if isolation_level:
             await session.connection(execution_options={"isolation_level": isolation_level})
-        ctx = TransactionContext(session)
-        token = _tx_context.set(ctx)
+        old = _tx_context.get()
+        _tx_context.set(TransactionContext(session))
         try:
             yield session
             if not read_only:
@@ -190,7 +190,7 @@ class SessionManager:
                 await session.rollback()
             raise
         finally:
-            _tx_context.reset(token)
+            _tx_context.set(old)
             await session.close()
 
 
