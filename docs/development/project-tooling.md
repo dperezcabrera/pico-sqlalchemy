@@ -5,7 +5,7 @@ This document describes the build, test, and packaging tooling used by the pico-
 ## Overview
 
 - pyproject.toml: Central configuration for build system, package metadata, dependencies, and optional extras. Uses setuptools and setuptools_scm to build and version the package.
-- tox.ini: Test automation across multiple Python versions (py310–py314). Provides environments to run the test suite and a dedicated coverage run configured to execute pytest with coverage reporting.
+- tox.ini: Test automation across multiple Python versions (py311–py314). Provides environments to run the test suite and a dedicated coverage run configured to execute pytest with coverage reporting.
 
 ## pyproject.toml
 
@@ -70,7 +70,7 @@ Uploading to PyPI (optional):
 ## tox.ini
 
 What it is:
-- A tox configuration to run tests across multiple Python interpreters (py310, py311, py312, py313, py314).
+- A tox configuration to run tests across multiple Python interpreters (py311, py312, py313, py314).
 - Ensures the test environments install required dependencies, including the “async” extras.
 - Provides a coverage environment to execute pytest with coverage reporting.
 
@@ -160,7 +160,7 @@ Notes:
 ## Troubleshooting
 
 - Missing Python interpreters in tox:
-  - Install the required versions (py310–py314) using pyenv or your OS package manager.
+  - Install the required versions (py311–py314) using pyenv or your OS package manager.
   - Recreate tox environments:
     ```
     tox -r
