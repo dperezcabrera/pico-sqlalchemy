@@ -254,6 +254,7 @@ def repository(
                 session.add(user)
                 return user
     """
+
     def decorate(c: type[Any]) -> type[Any]:
         setattr(c, REPOSITORY_META, kwargs)
         from .interceptor import TransactionalInterceptor
