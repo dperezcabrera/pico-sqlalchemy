@@ -131,3 +131,9 @@ The startup sequence involves two separate components:
 2. **`PicoSqlAlchemyLifecycle`** (via `@configure`) collects all `DatabaseConfigurer` implementations, sorts them by `priority` (ascending), and calls `configure(engine)` on each.
 
 This ensures that your specific database tuning (like pragmas or connection pool listeners) is applied reliably before the application starts accepting traffic.
+
+---
+
+## Auto-generated API
+
+::: pico_sqlalchemy.config
