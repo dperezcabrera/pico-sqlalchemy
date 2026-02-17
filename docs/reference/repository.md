@@ -192,4 +192,8 @@ The `@query` interceptor is smart about return types:
 | **`@query`** | **Read-Only** | **Ignores** body; executes SQL/Expr automatically. |
 | **`@transactional`** | **Explicit** | Executes your Python code body with custom config. |
 
+---
 
+## Auto-generated API
+
+::: pico_sqlalchemy.repository_interceptor

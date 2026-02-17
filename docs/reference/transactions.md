@@ -159,3 +159,9 @@ class MyService:
         session = get_session(self.sm)
         # ... use session ...
 ```
+
+---
+
+## Auto-generated API
+
+::: pico_sqlalchemy.interceptor

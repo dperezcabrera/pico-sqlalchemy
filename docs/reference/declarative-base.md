@@ -86,3 +86,8 @@ from myapp.models import User, Post  # Import models to register them
 target_metadata = AppBase.metadata
 ```
 
+---
+
+## Auto-generated API
+
+::: pico_sqlalchemy.base
