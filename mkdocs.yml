@@ -148,6 +148,6 @@ nav:
     - Transactions: reference/transactions.md
   - Development:
     - Tooling: development/project-tooling.md
-  - Claude Code Skills: skills.md
+  - AI Coding Skills: skills.md
   - FAQ: faq.md
   - Changelog: CHANGELOG.md
