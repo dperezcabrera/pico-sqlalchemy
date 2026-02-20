@@ -130,7 +130,7 @@ class AlembicMigrator(DatabaseConfigurer):
         # Run before any seed-data configurers
         return -10
 
-    def configure(self, engine) -> None:
+    def configure_database(self, engine) -> None:
         alembic_cfg = Config("alembic.ini")
         command.upgrade(alembic_cfg, "head")
 ```

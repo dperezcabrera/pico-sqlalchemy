@@ -4,7 +4,7 @@
   ``SessionManager`` singleton from ``DatabaseSettings``.
 * ``PicoSqlAlchemyLifecycle`` -- a ``@component`` with a ``@configure``
   hook that discovers all ``DatabaseConfigurer`` implementations and
-  calls their ``configure()`` methods in priority order.
+  calls their ``configure_database()`` methods in priority order.
 
 These are auto-discovered when ``"pico_sqlalchemy"`` is listed in the
 ``modules`` argument of ``pico_ioc.init()``.
@@ -36,7 +36,7 @@ class PicoSqlAlchemyLifecycle:
     The ``@configure``-annotated ``setup_database`` method is called
     automatically by pico-ioc after all components have been registered.
     It collects every ``DatabaseConfigurer`` bean, sorts them by
-    ``priority`` (ascending), and calls ``configure(engine)`` on each.
+    ``priority`` (ascending), and calls ``configure_database(engine)`` on each.
     """
 
     @configure
@@ -53,11 +53,11 @@ class PicoSqlAlchemyLifecycle:
                 discovered by the container (injected as a list).
         """
         valid = [
-            c for c in configurers if isinstance(c, DatabaseConfigurer) and callable(getattr(c, "configure", None))
+            c for c in configurers if isinstance(c, DatabaseConfigurer) and callable(getattr(c, "configure_database", None))
         ]
         ordered = sorted(valid, key=_priority_of)
         for cfg in ordered:
-            cfg.configure(session_manager.engine)
+            cfg.configure_database(session_manager.engine)
 
 
 @factory

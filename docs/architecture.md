@@ -103,7 +103,7 @@ pico-sqlalchemy registers the following components at startup:
 4. PicoSqlAlchemyLifecycle.setup_database(session_manager, configurers)
        │  Collects all DatabaseConfigurer implementations
        │  Sorts by priority (ascending)
-       │  Calls configure(engine) on each
+       │  Calls configure_database(engine) on each
        │
 5. Application ready — interceptors, repositories, services available
 ```
@@ -459,6 +459,6 @@ flowchart TD
     H --> I["PicoSqlAlchemyLifecycle.setup_database()"]
     I --> J["Collect all DatabaseConfigurer beans"]
     J --> K["Sort by priority (ascending)"]
-    K --> L["Call configure(engine) on each"]
+    K --> L["Call configure_database(engine) on each"]
     L --> M["Application ready"]
 ```

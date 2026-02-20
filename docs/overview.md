@@ -58,7 +58,7 @@ class TableCreationConfigurer(DatabaseConfigurer):
     def __init__(self, base: AppBase):
         self.base = base
 
-    def configure(self, engine):
+    def configure_database(self, engine):
         async def setup_database():
             async with engine.begin() as conn:
                 await conn.run_sync(self.base.metadata.create_all)
