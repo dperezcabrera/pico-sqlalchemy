@@ -53,7 +53,9 @@ class PicoSqlAlchemyLifecycle:
                 discovered by the container (injected as a list).
         """
         valid = [
-            c for c in configurers if isinstance(c, DatabaseConfigurer) and callable(getattr(c, "configure_database", None))
+            c
+            for c in configurers
+            if isinstance(c, DatabaseConfigurer) and callable(getattr(c, "configure_database", None))
         ]
         ordered = sorted(valid, key=_priority_of)
         for cfg in ordered:
