@@ -17,7 +17,7 @@ class DatabaseConfigurer(Protocol):
     """Protocol for database startup hooks.
 
     Implement this protocol and register the class as a ``@component``
-    to have ``configure()`` called automatically during application
+    to have ``configure_database()`` called automatically during application
     startup, in ascending ``priority`` order.
 
     Typical uses include DDL creation, Alembic migrations, and seed
@@ -38,7 +38,7 @@ class DatabaseConfigurer(Protocol):
             def priority(self) -> int:
                 return 0
 
-            def configure(self, engine) -> None:
+            def configure_database(self, engine) -> None:
                 import asyncio
                 async def _create():
                     async with engine.begin() as conn:
@@ -50,7 +50,7 @@ class DatabaseConfigurer(Protocol):
     def priority(self) -> int:
         return 0
 
-    def configure(self, engine) -> None:
+    def configure_database(self, engine) -> None:
         """Run configuration against the given ``AsyncEngine``.
 
         Args:

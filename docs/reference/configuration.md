@@ -13,7 +13,7 @@ This reference covers the database configuration extension points: the `Database
   - A small extension point for customizing the database engine after it is created.
   - Members:
     - `priority`: int attribute (or property) used to order multiple configurers. Lower numbers run first.
-    - `configure(self, engine)`: Applies configuration to the database engine.
+    - `configure_database(self, engine)`: Applies configuration to the database engine.
 
 ## 1. DatabaseSettings
 
@@ -79,7 +79,7 @@ from pico_sqlalchemy import DatabaseConfigurer
 class EnableSqlEcho(DatabaseConfigurer):
     priority = 10  # Runs early
 
-    def configure(self, engine):
+    def configure_database(self, engine):
         engine.echo = True
 ```
 
@@ -94,7 +94,7 @@ from pico_sqlalchemy import DatabaseConfigurer
 class SQLitePragmaConfigurer(DatabaseConfigurer):
     priority = 50  # Runs after basic setup
 
-    def configure(self, engine):
+    def configure_database(self, engine):
         @event.listens_for(engine.sync_engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             cursor = dbapi_connection.cursor()
@@ -116,7 +116,7 @@ class TableCreationConfigurer(DatabaseConfigurer):
     def __init__(self, base: AppBase):
         self.base = base
 
-    def configure(self, engine):
+    def configure_database(self, engine):
         async def init_schema():
             async with engine.begin() as conn:
                 await conn.run_sync(self.base.metadata.create_all)
@@ -128,7 +128,7 @@ class TableCreationConfigurer(DatabaseConfigurer):
 The startup sequence involves two separate components:
 
 1. **`SqlAlchemyFactory`** creates the `SessionManager` singleton from `DatabaseSettings` (creates the `AsyncEngine` and session factory).
-2. **`PicoSqlAlchemyLifecycle`** (via `@configure`) collects all `DatabaseConfigurer` implementations, sorts them by `priority` (ascending), and calls `configure(engine)` on each.
+2. **`PicoSqlAlchemyLifecycle`** (via `@configure`) collects all `DatabaseConfigurer` implementations, sorts them by `priority` (ascending), and calls `configure_database(engine)` on each.
 
 This ensures that your specific database tuning (like pragmas or connection pool listeners) is applied reliably before the application starts accepting traffic.
 

@@ -152,14 +152,14 @@ class PrimarySchemaSetup(DatabaseConfigurer):
     def priority(self) -> int:
         return 0
 
-    def configure(self, engine) -> None:
+    def configure_database(self, engine) -> None:
         async def run():
             async with engine.begin() as conn:
                 await conn.run_sync(self.base.metadata.create_all)
         asyncio.run(run())
 ```
 
-For the secondary database, you may need to call `configure()` manually or create a separate lifecycle component that is wired to `SecondarySessionManager`.
+For the secondary database, you may need to call `configure_database()` manually or create a separate lifecycle component that is wired to `SecondarySessionManager`.
 
 ---
 

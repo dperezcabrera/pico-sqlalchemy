@@ -57,7 +57,7 @@ class TableCreationConfigurer(DatabaseConfigurer):
     def __init__(self, base: AppBase):
         self.base = base
 
-    def configure(self, engine):
+    def configure_database(self, engine):
         async def init_schema():
             async with engine.begin() as conn:
                 # 2. Access metadata through the injected instance
