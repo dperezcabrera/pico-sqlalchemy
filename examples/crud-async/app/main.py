@@ -9,14 +9,8 @@ from .services import UserService
 async def main():
     config = configuration(YamlTreeSource("config.yml"))
 
-    container = init(
-        modules=[
-            "app.models",
-            "app.repositories",
-            "app.services",
-        ],
-        config=config,
-    )
+    # pico-boot scans "app" recursively and auto-discovers pico-sqlalchemy
+    container = init(modules=["app"], config=config)
 
     service = await container.aget(UserService)
 

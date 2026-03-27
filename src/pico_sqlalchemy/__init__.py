@@ -18,7 +18,8 @@ Typical usage::
     config = configuration(DictSource({
         "database": {"url": "sqlite+aiosqlite:///:memory:"}
     }))
-    container = init(modules=["pico_sqlalchemy", "my_app"], config=config)
+    # pico-boot auto-discovers pico-sqlalchemy — just list your app module
+    container = init(modules=["my_app"], config=config)
 """
 
 from .base import AppBase, Mapped, mapped_column
