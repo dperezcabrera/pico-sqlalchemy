@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.h
 
 ---
 
+## [0.4.0] - 2026-06-07
+
+### Added
+- **Transaction-scoped DI**: `TransactionalInterceptor` now binds pico-ioc's `"transaction"` DI scope to the database transaction boundary. When a *new* transaction starts (`REQUIRES_NEW`, or `REQUIRED` with no enclosing transaction) it activates a fresh `"transaction"` scope (via `container.scope(..., cleanup=True)`) for the duration of the call, so components registered with `scope="transaction"` live exactly one transaction and run their `@cleanup` hooks when it ends. Joins reuse the enclosing scope. Requires **pico-ioc >= 2.2.6**.
+- `tests/test_transaction_scope.py`: covers one-instance-per-transaction, sharing within a transaction, `REQUIRES_NEW` scope push/restore, fail-fast resolution outside a transaction, and `@cleanup` on transaction end.
+
+### Changed
+- Bumped `pico-ioc` dependency to `>= 2.2.6`.
+
+---
+
 ## [0.3.0] - 2026-02-20
 
 ### Changed

@@ -1,5 +1,6 @@
 from pico_ioc import component
-from pico_sqlalchemy import transactional, repository
+
+from pico_sqlalchemy import repository, transactional
 
 from .models import User
 

@@ -118,7 +118,7 @@ pico-sqlalchemy uses a `ContextVar` to propagate the active session across async
 _tx_context: ContextVar[TransactionContext | None]
 ```
 
-This is **separate from pico-ioc's scope system**. It is a lightweight, per-async-task variable that stores the currently active `AsyncSession` wrapped in a `TransactionContext`.
+This is the **session** side of a transaction: a lightweight, per-async-task variable that stores the currently active `AsyncSession` wrapped in a `TransactionContext`. It is paired with the pico-ioc `"transaction"` DI scope (the **component** side — see below), bound to the same boundary by `TransactionalInterceptor`.
 
 **How it works:**
 
@@ -140,7 +140,31 @@ Service.create_user()                     ← @transactional
    _tx_context = None
 ```
 
-**Why not pico-ioc scopes?** The `_tx_context` ContextVar provides transaction propagation semantics (REQUIRED, REQUIRES_NEW, etc.) that don't map to pico-ioc's scope lifecycle. A transaction may be suspended and restored (REQUIRES_NEW, NOT_SUPPORTED), which requires explicit save/restore of the context — something ContextVar handles naturally.
+**Why a ContextVar for the session?** Transaction propagation (REQUIRED, REQUIRES_NEW, etc.) needs to suspend and restore the active session (REQUIRES_NEW, NOT_SUPPORTED) — something a `ContextVar` handles naturally, save/restore via tokens.
+
+### The paired `"transaction"` DI scope
+
+`TransactionalInterceptor` also binds pico-ioc's `"transaction"` **DI scope** to the same boundary. Whenever a *new* transaction is born — `REQUIRES_NEW`, or `REQUIRED` with no enclosing transaction — it activates a fresh `"transaction"` scope (with `cleanup=True`) around the call:
+
+```text
+Service.create_user()                     ← @transactional REQUIRED (new tx)
+│  activate "transaction" scope  (id = T1)         _tx_context = session_A
+│
+├─ container.get(AuditLog)  → scope="transaction"  ← created once, id T1
+├─ container.get(AuditLog)  → same instance        ← joined: same T1
+│
+├─ Other.in_new_tx()                      ← @transactional REQUIRES_NEW
+│  │  activate "transaction" scope (id = T2)        _tx_context = session_B
+│  └─ container.get(AuditLog) → NEW instance        ← isolated in T2
+│     deactivate T2 (+ @cleanup), restore T1, session_A
+│
+└─ commit / rollback
+   deactivate T1 (runs @cleanup on T1's components), _tx_context = None
+```
+
+So a `scope="transaction"` component is **one instance per transaction** — a Unit-of-Work / identity-map that is released (running its `@cleanup` hooks) when the transaction ends. Joins reuse the enclosing instance; `REQUIRES_NEW` gets its own and restores the outer one afterwards. Non-transactional paths (`NEVER`, `NOT_SUPPORTED`, `SUPPORTS` without a tx) open no scope — resolving a `scope="transaction"` component there raises `ScopeError`.
+
+> The scope is bound at the interceptor (which wraps the call directly), not deep inside `SessionManager`: a `ContextVar` set inside the transaction async-generator does not reliably reach the method body across nesting. As with any AOP, **self-invocation bypasses it** — `REQUIRES_NEW` only opens a new transaction/scope when the method is called on another injected component, not via `self.method()`.
 
 ---
 

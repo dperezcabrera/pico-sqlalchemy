@@ -1,7 +1,7 @@
 import asyncio
 
 from pico_boot import init
-from pico_ioc import configuration, YamlTreeSource
+from pico_ioc import YamlTreeSource, configuration
 
 from .services import UserService
 

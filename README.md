@@ -1,4 +1,4 @@
-# 📦 pico-sqlalchemy
+# pico-sqlalchemy
 
 [![PyPI](https://img.shields.io/pypi/v/pico-sqlalchemy.svg)](https://pypi.org/project/pico-sqlalchemy/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dperezcabrera/pico-sqlalchemy)
@@ -17,14 +17,14 @@
 
 It brings constructor-based dependency injection, **implicit transaction management**, and powerful **declarative queries** using pure Python and SQLAlchemy’s Async ORM.
 
-> 🐍 **Requires Python 3.11+**
-> 🚀 **Async-Native:** Built entirely on `AsyncSession` and `create_async_engine`.
-> ✨ **Zero-Boilerplate:** Repositories are transactional by default.
-> 🔍 **Declarative Queries:** Define SQL or expressions in decorators; the library executes them for you.
+> **Requires Python 3.11+**
+> **Async-Native:** Built entirely on `AsyncSession` and `create_async_engine`.
+> **Zero-Boilerplate:** Repositories are transactional by default.
+> **Declarative Queries:** Define SQL or expressions in decorators; the library executes them for you.
 
 ---
 
-## 🎯 Why pico-sqlalchemy?
+## Why pico-sqlalchemy?
 
 Most Python apps suffer from manual session handling (`async with session...`), scattered transaction logic, and verbose repository patterns.
 
@@ -40,7 +40,7 @@ Most Python apps suffer from manual session handling (`async with session...`), 
 
 ---
 
-## 🧱 Core Features
+## Core Features
 
 * **Implicit Transactions:** Methods inside `@repository` are automatically **Read-Write** transactional.
 * **Declarative Queries:** Use `@query` to run SQL or Expressions automatically (defaults to **Read-Only**).
@@ -50,7 +50,7 @@ Most Python apps suffer from manual session handling (`async with session...`), 
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
 pip install pico-sqlalchemy
@@ -65,7 +65,7 @@ pip install asyncpg     # for PostgreSQL
 
 -----
 
-## 🚀 Quick Example
+## Quick Example
 
 ### 1\. Define Model
 
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
 -----
 
-## ⚡ Transaction Hierarchy & Rules
+## Transaction Hierarchy & Rules
 
 Pico-SQLAlchemy applies a "Best Effort" strategy to determine transaction configuration. The priority order (highest wins) is:
 
@@ -178,7 +178,7 @@ Pico-SQLAlchemy applies a "Best Effort" strategy to determine transaction config
     async def update_user(self): ...
     ```
 
-    👉 **Result:** Active Read-Write Transaction (Implicit from `@repository`).
+    **Result:** Active Read-Write Transaction (Implicit from `@repository`).
 
 2.  **Query Method:**
 
@@ -187,7 +187,7 @@ Pico-SQLAlchemy applies a "Best Effort" strategy to determine transaction config
     async def get_data(self): ...
     ```
 
-    👉 **Result:** Active Read-Only Transaction (Implicit from `@query`).
+    **Result:** Active Read-Only Transaction (Implicit from `@query`).
 
 3.  **Manual Override:**
 
@@ -196,11 +196,29 @@ Pico-SQLAlchemy applies a "Best Effort" strategy to determine transaction config
     async def complex_report(self): ...
     ```
 
-    👉 **Result:** Active Read-Only Transaction (Explicit override).
+    **Result:** Active Read-Only Transaction (Explicit override).
+
+### Transaction-scoped components *(v0.4.0+)*
+
+Beyond managing the SQLAlchemy session, the interceptor binds pico-ioc's **`"transaction"` DI scope** to the same boundary. A component registered with `scope="transaction"` is instantiated **once per database transaction** and torn down (running its `@cleanup` hooks) when that transaction ends:
+
+```python
+@component(scope="transaction")
+class UnitOfWorkAudit:
+    def __init__(self):
+        self.events: list[str] = []
+
+    @cleanup
+    def flush(self):
+        # runs exactly when the enclosing transaction ends
+        ...
+```
+
+A **new** transaction (`REQUIRES_NEW`, or `REQUIRED` with no enclosing transaction) opens a fresh scope; **joins reuse** the enclosing one — so the session boundary and the DI lifetime are two facets of a single transaction. Requires **pico-ioc ≥ 2.2.6**.
 
 -----
 
-## 🔍 Declarative Queries in Depth
+## Declarative Queries in Depth
 
 The `@query` decorator eliminates boilerplate for common fetches.
 
@@ -235,7 +253,7 @@ async def find_active(self, page: PageRequest) -> Page[User]: ...
 
 -----
 
-## 🧪 Testing
+## Testing
 
 Testing is simple because you can override the configuration or the components easily using Pico-IoC.
 
@@ -253,7 +271,7 @@ async def test_service():
 
 -----
 
-## 💡 Architecture Overview
+## Architecture Overview
 
 ```
                  ┌─────────────────────────────┐
@@ -291,7 +309,7 @@ curl -sL https://raw.githubusercontent.com/dperezcabrera/pico-skills/main/instal
 |---------|-------------|
 | `/add-repository` | Add SQLAlchemy entities and repositories with transactions |
 | `/add-component` | Add components, factories, interceptors, settings |
-| `/add-tests` | Generate tests for pico-framework components |
+| `/add-tests` | Generate tests for pico components |
 
 All skills: `curl -sL https://raw.githubusercontent.com/dperezcabrera/pico-skills/main/install.sh | bash`
 
@@ -299,6 +317,6 @@ See [pico-skills](https://github.com/dperezcabrera/pico-skills) for details.
 
 ---
 
-## 📝 License
+## License
 
 MIT
