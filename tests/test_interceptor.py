@@ -2,7 +2,7 @@ import asyncio
 
 from sqlalchemy import Column, Integer, String, select
 
-from conftest import Base, new_session_manager
+from conftest import Base, new_container, new_session_manager
 from pico_sqlalchemy import SessionManager, TransactionalInterceptor, transactional
 
 
@@ -14,7 +14,7 @@ class InterceptorUser(Base):
 
 def test_interceptor_without_transactional_metadata_non_awaitable_result():
     manager = new_session_manager(Base)
-    interceptor = TransactionalInterceptor(manager)
+    interceptor = TransactionalInterceptor(manager, new_container())
 
     class Dummy:
         def method(self):
@@ -35,7 +35,7 @@ def test_interceptor_without_transactional_metadata_non_awaitable_result():
 
 def test_interceptor_with_transactional_metadata_and_awaitable_result():
     manager = new_session_manager(Base)
-    interceptor = TransactionalInterceptor(manager)
+    interceptor = TransactionalInterceptor(manager, new_container())
 
     class Dummy:
         @transactional(propagation="REQUIRES_NEW", read_only=False)
@@ -57,7 +57,7 @@ def test_interceptor_with_transactional_metadata_and_awaitable_result():
 
 def test_interceptor_transaction_block_allows_db_work():
     manager = new_session_manager(Base)
-    interceptor = TransactionalInterceptor(manager)
+    interceptor = TransactionalInterceptor(manager, new_container())
 
     class Dummy:
         @transactional(propagation="REQUIRED")
@@ -93,7 +93,7 @@ def test_interceptor_transaction_block_allows_db_work():
 def test_transactional_without_parentheses():
     """@transactional without parens uses REQUIRED defaults."""
     manager = new_session_manager(Base)
-    interceptor = TransactionalInterceptor(manager)
+    interceptor = TransactionalInterceptor(manager, new_container())
 
     class Dummy:
         @transactional

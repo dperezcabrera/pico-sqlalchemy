@@ -21,7 +21,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from conftest import Base, new_session_manager
+from conftest import Base, new_container, new_session_manager
 from pico_sqlalchemy import SessionManager, get_session, query, repository, transactional
 from pico_sqlalchemy.decorators import QUERY_META, REPOSITORY_META, TRANSACTIONAL_META
 from pico_sqlalchemy.factory import _priority_of
@@ -111,7 +111,7 @@ class TestTransactionalInterceptorNoMeta:
     async def test_no_meta_sync_call_next(self):
         """Lines 89-93: call_next returns non-awaitable when no transactional meta."""
         manager = MagicMock(spec=SessionManager)
-        interceptor = TransactionalInterceptor(manager)
+        interceptor = TransactionalInterceptor(manager, new_container())
 
         class PlainClass:
             def plain_method(self):
@@ -131,7 +131,7 @@ class TestTransactionalInterceptorNoMeta:
     async def test_no_meta_async_call_next(self):
         """Line 92: call_next returns awaitable when no transactional meta."""
         manager = MagicMock(spec=SessionManager)
-        interceptor = TransactionalInterceptor(manager)
+        interceptor = TransactionalInterceptor(manager, new_container())
 
         class PlainClass:
             def plain_method(self):
@@ -153,7 +153,7 @@ class TestTransactionalInterceptorWithMetaSyncNext:
     async def test_with_meta_sync_call_next(self):
         """Lines 109->111: call_next returns non-awaitable when meta exists."""
         sm = SessionManager(url="sqlite+aiosqlite:///:memory:")
-        interceptor = TransactionalInterceptor(sm)
+        interceptor = TransactionalInterceptor(sm, new_container())
 
         class TxClass:
             @transactional

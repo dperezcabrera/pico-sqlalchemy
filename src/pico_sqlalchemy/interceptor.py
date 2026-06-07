@@ -55,12 +55,12 @@ class TransactionalInterceptor(MethodInterceptor):
         session_manager: The ``SessionManager`` singleton used to open
             or join transactions.
         container: The pico-ioc container, used to activate the
-            ``"transaction"`` DI scope around new transactions. Optional:
-            when ``None`` (e.g. a directly-constructed interceptor in a
-            unit test) the transaction still runs but no DI scope is bound.
+            ``"transaction"`` DI scope around new transactions. Required —
+            auto-injected by pico-ioc; directly-constructed interceptors
+            (e.g. in a unit test) must pass a real container.
     """
 
-    def __init__(self, session_manager: SessionManager, container: PicoContainer | None = None):
+    def __init__(self, session_manager: SessionManager, container: PicoContainer):
         self.sm = session_manager
         self.container = container
 
@@ -125,11 +125,7 @@ class TransactionalInterceptor(MethodInterceptor):
         opens_new_tx = propagation == "REQUIRES_NEW" or (
             propagation == "REQUIRED" and self.sm.get_current_session() is None
         )
-        scope_cm = (
-            self.container.scope("transaction", uuid4().hex, cleanup=True)
-            if opens_new_tx and self.container is not None
-            else nullcontext()
-        )
+        scope_cm = self.container.scope("transaction", uuid4().hex, cleanup=True) if opens_new_tx else nullcontext()
 
         async with self.sm.transaction(
             propagation=propagation,

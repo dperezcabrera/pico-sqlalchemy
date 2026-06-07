@@ -2,10 +2,21 @@
 
 import asyncio
 
+from pico_ioc import PicoContainer, init
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import DeclarativeBase
 
 from pico_sqlalchemy import AppBase, DatabaseConfigurer, SessionManager
+
+
+def new_container() -> PicoContainer:
+    """A minimal real pico-ioc container for standalone interceptor tests.
+
+    The ``TransactionalInterceptor`` needs a container to activate the
+    ``"transaction"`` DI scope; an empty container already provides the
+    default scopes, so no components are required."""
+    return init(modules=[])
+
 
 # ── Shared declarative base for standalone SessionManager tests ──
 
