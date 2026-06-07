@@ -82,9 +82,7 @@ class Probe:
 
 @pytest.fixture(scope="module")
 def container():
-    cfg = configuration(
-        DictSource({"database": {"url": "sqlite+aiosqlite:///:memory:", "echo": False}})
-    )
+    cfg = configuration(DictSource({"database": {"url": "sqlite+aiosqlite:///:memory:", "echo": False}}))
     c = init(modules=["pico_sqlalchemy", __name__], config=cfg)
     try:
         yield c
