@@ -24,6 +24,7 @@ class UserRepository:
     @transactional(read_only=True)
     async def find_all(self, session) -> list[User]:
         from sqlalchemy import select
+
         result = await session.execute(select(User))
         return list(result.scalars().all())
 
