@@ -10,12 +10,15 @@ These are auto-discovered when ``"pico_sqlalchemy"`` is listed in the
 ``modules`` argument of ``pico_ioc.init()``.
 """
 
+import logging
 from typing import List
 
 from pico_ioc import component, configure, factory, provides
 
 from .config import DatabaseConfigurer, DatabaseSettings
 from .session import SessionManager
+
+logger = logging.getLogger(__name__)
 
 
 def _priority_of(obj):
@@ -25,7 +28,12 @@ def _priority_of(obj):
     """
     try:
         return int(getattr(obj, "priority", 0))
-    except Exception:
+    except Exception as exc:
+        logger.warning(
+            "DatabaseConfigurer %s has an unusable priority (%s); treating it as 0",
+            type(obj).__name__,
+            exc,
+        )
         return 0
 
 

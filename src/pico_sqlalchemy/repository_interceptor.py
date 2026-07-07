@@ -220,7 +220,10 @@ class RepositoryQueryInterceptor(MethodInterceptor):
         meta = getattr(func, QUERY_META, None)
 
         if meta is None:
-            return await self._call_next_async(ctx, call_next)
+            result = call_next(ctx)
+            if inspect.isawaitable(result):
+                result = await result
+            return result
 
         session = get_session(self.session_manager)
         params = self._bind_params(func, ctx.args, ctx.kwargs)
@@ -233,13 +236,6 @@ class RepositoryQueryInterceptor(MethodInterceptor):
         if mode == "expr":
             return await self._execute_expr(session, meta, params, entity)
         raise RuntimeError(f"Unsupported query mode: {mode!r}")
-
-    async def _call_next_async(self, ctx: MethodCtx, call_next: Callable) -> Any:
-        """Invoke the next interceptor or method, awaiting if needed."""
-        result = call_next(ctx)
-        if inspect.isawaitable(result):
-            result = await result
-        return result
 
     def _bind_params(
         self,
@@ -319,7 +315,8 @@ class RepositoryQueryInterceptor(MethodInterceptor):
         unique = meta.get("unique", False)
         paged = meta.get("paged", False)
 
-        self._validate_entity(entity)
+        if entity is None or not hasattr(entity, "__tablename__"):
+            raise RuntimeError("@query with expr requires @repository(entity=...) and an entity with __tablename__")
         base_sql = self._build_base_sql(entity, expr)
 
         page_req = _extract_page_request(params, paged)
@@ -330,16 +327,6 @@ class RepositoryQueryInterceptor(MethodInterceptor):
         if paged:
             return await _execute_paginated_query(session, base_sql, params, page_req)
         return await _execute_simple_query(session, base_sql, params, unique)
-
-    def _validate_entity(self, entity: Any) -> None:
-        """Ensure *entity* is set and has a ``__tablename__`` attribute.
-
-        Raises:
-            RuntimeError: ``"@query with expr requires @repository(entity=...)
-                and an entity with __tablename__"``
-        """
-        if entity is None or not hasattr(entity, "__tablename__"):
-            raise RuntimeError("@query with expr requires @repository(entity=...) and an entity with __tablename__")
 
     def _build_base_sql(self, entity: Any, expr: str | None) -> str:
         """Build the base ``SELECT`` query from the entity and optional expression.
