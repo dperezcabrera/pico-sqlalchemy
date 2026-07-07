@@ -1,4 +1,4 @@
-# 🚀 Pico-SQLAlchemy: Async-Native ORM
+# Pico-SQLAlchemy: Async-Native ORM
 
 `pico-sqlalchemy` is a thin integration layer that connects **Pico-IoC**’s inversion-of-control container with **SQLAlchemy**’s async session and transaction management.
 
