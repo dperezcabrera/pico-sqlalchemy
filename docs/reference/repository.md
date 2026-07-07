@@ -142,7 +142,7 @@ class UserRepository:
 
 You can request dynamic sorting by passing a list of `Sort` objects within the `PageRequest`.
 
-> **⚠️ Warning: Expression Mode Only**
+> **Warning: Expression Mode Only**
 >
 > Dynamic sorting (injecting `ORDER BY` clauses based on `PageRequest`) works **only** in **Expression Mode (`expr`)**.
 >
