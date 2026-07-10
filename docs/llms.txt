@@ -1,0 +1,29 @@
+# pico-sqlalchemy
+
+> Seamless integration between Pico-IoC and SQLAlchemy with async support, transaction management, and repository pattern
+
+## Docs
+
+- [Home](https://dperezcabrera.github.io/pico-sqlalchemy/)
+- [Getting Started](https://dperezcabrera.github.io/pico-sqlalchemy/quickstart/)
+- [Overview](https://dperezcabrera.github.io/pico-sqlalchemy/overview/)
+- [Architecture](https://dperezcabrera.github.io/pico-sqlalchemy/architecture/)
+- [Alembic Migrations](https://dperezcabrera.github.io/pico-sqlalchemy/how-to/alembic/)
+- [Multiple Databases](https://dperezcabrera.github.io/pico-sqlalchemy/how-to/multiple-databases/)
+- [Testing](https://dperezcabrera.github.io/pico-sqlalchemy/how-to/testing/)
+- [Configuration](https://dperezcabrera.github.io/pico-sqlalchemy/reference/configuration/)
+- [Declarative Base](https://dperezcabrera.github.io/pico-sqlalchemy/reference/declarative-base/)
+- [Repositories](https://dperezcabrera.github.io/pico-sqlalchemy/reference/repository/)
+- [Transactions](https://dperezcabrera.github.io/pico-sqlalchemy/reference/transactions/)
+- [Tooling](https://dperezcabrera.github.io/pico-sqlalchemy/development/project-tooling/)
+- [AI Coding Skills](https://dperezcabrera.github.io/pico-sqlalchemy/skills/)
+- [FAQ](https://dperezcabrera.github.io/pico-sqlalchemy/faq/)
+- [Troubleshooting](https://dperezcabrera.github.io/pico-sqlalchemy/troubleshooting/)
+- [Changelog](https://dperezcabrera.github.io/pico-sqlalchemy/CHANGELOG/)
+
+## For agents
+
+- [Full docs in one file](https://dperezcabrera.github.io/pico-sqlalchemy/llms-full.txt)
+- [AGENTS.md (conventions and boundaries)](https://raw.githubusercontent.com/dperezcabrera/pico-sqlalchemy/main/AGENTS.md)
+- [Flagship use case (whole ecosystem wired)](https://dperezcabrera.github.io/pico-boot/flagship/)
+- [PyPI](https://pypi.org/project/pico-sqlalchemy/)
