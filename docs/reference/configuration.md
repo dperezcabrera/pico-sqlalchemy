@@ -30,6 +30,8 @@ The following fields map directly to the underlying SQLAlchemy `create_async_eng
 | **`pool_size`** | `int` | `5` | The number of connections to keep open inside the connection pool. |
 | **`pool_pre_ping`** | `bool` | `True` | If `True`, tests connections for liveness upon checkout (prevents "MySQL server has gone away" errors). |
 | **`pool_recycle`** | `int` | `3600` | Recycle connections after this many seconds to prevent timeouts from the database side. |
+| **`migrations_path`** | `str` | `""` | Alembic script directory (the one containing `env.py`). Empty disables startup migrations. Requires `pico-sqlalchemy[migrations]`. |
+| **`migrations_target`** | `str` | `"head"` | Alembic revision to upgrade to on startup. |
 
 > **Note:** `pool_size`, `pool_pre_ping`, and `pool_recycle` are ignored if using SQLite with `:memory:`.
 

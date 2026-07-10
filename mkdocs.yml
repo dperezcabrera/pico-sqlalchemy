@@ -141,6 +141,10 @@ nav:
   - User Guide:
     - Overview: overview.md
     - Architecture: architecture.md
+  - How-To:
+    - Alembic Migrations: how-to/alembic.md
+    - Multiple Databases: how-to/multiple-databases.md
+    - Testing: how-to/testing.md
   - Reference:
     - Configuration: reference/configuration.md
     - Declarative Base: reference/declarative-base.md
@@ -150,4 +154,5 @@ nav:
     - Tooling: development/project-tooling.md
   - AI Coding Skills: skills.md
   - FAQ: faq.md
+  - Troubleshooting: troubleshooting.md
   - Changelog: CHANGELOG.md
