@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.h
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- `AlembicMigrator`: runs `alembic upgrade` at container startup when `database.migrations_path` points to an Alembic script directory (`migrations_target` selects the revision, default `head`). Optional extra: `pico-sqlalchemy[migrations]`.
+
+---
+
 ## [0.4.0] - 2026-06-07
 
 ### Added

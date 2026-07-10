@@ -10,6 +10,19 @@ This guide shows how to integrate [Alembic](https://alembic.sqlalchemy.org/) dat
 pip install alembic
 ```
 
+## Zero-code startup migrations
+
+Once your Alembic directory exists (steps below), you can skip wiring entirely: point config at it and the container upgrades on startup, before any other `DatabaseConfigurer`:
+
+```yaml
+database:
+  url: postgresql+asyncpg://user:pass@host/db
+  migrations_path: alembic        # directory containing env.py
+  migrations_target: head         # optional, default head
+```
+
+Requires the extra: `pip install pico-sqlalchemy[migrations]`. The configured `database.url` is passed to Alembic verbatim as `sqlalchemy.url`, so keep the async `env.py` from this guide.
+
 ## 1. Initialize Alembic
 
 ```bash
