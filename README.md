@@ -317,6 +317,16 @@ See [pico-skills](https://github.com/dperezcabrera/pico-skills) for details.
 
 ---
 
+## Migrations on startup
+
+Point config at your Alembic directory and the container runs `upgrade head` before anything else touches the database (extra: `pico-sqlalchemy[migrations]`):
+
+```yaml
+database:
+  url: postgresql+asyncpg://user:pass@host/db
+  migrations_path: alembic
+```
+
 ## License
 
 MIT
