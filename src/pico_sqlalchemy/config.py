@@ -82,6 +82,10 @@ class DatabaseSettings:
         pool_size: Connection pool size.
         pool_pre_ping: Test connections before checkout.
         pool_recycle: Recycle connections after this many seconds.
+        migrations_path: Alembic script directory (the one containing
+            ``env.py``). Empty string (default) disables startup
+            migrations. Requires ``pico-sqlalchemy[migrations]``.
+        migrations_target: Alembic revision to upgrade to on startup.
     """
 
     url: str = "sqlite+aiosqlite:///./app.db"
@@ -89,3 +93,5 @@ class DatabaseSettings:
     pool_size: int = 5
     pool_pre_ping: bool = True
     pool_recycle: int = 3600
+    migrations_path: str = ""
+    migrations_target: str = "head"
