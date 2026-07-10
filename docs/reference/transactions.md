@@ -64,11 +64,13 @@ You want a complex reporting method inside a repository to be Read-Only for perf
 ```python
 @repository
 class ReportRepository:
+    ...
     # Default is Read-Write...
     
     # Override to Read-Only!
     @transactional(read_only=True)
     async def generate_complex_stats(self):
+        ...
         # ... logic ...
 ```
 
@@ -94,6 +96,7 @@ from pico_sqlalchemy import transactional
 class UserService:
     @transactional(propagation="REQUIRES_NEW")
     async def create_user(self, name: str):
+        ...
         # ...
 ```
 
@@ -134,6 +137,7 @@ By default, **any exception** (inheriting from `Exception`) triggers a `rollback
     no_rollback_for=(ValidationWarning,)
 )
 async def business_logic():
+    ...
     # ...
 ```
 

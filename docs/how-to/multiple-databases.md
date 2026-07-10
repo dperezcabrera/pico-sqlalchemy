@@ -200,7 +200,7 @@ class AuditRepository:
 
 And in the factory:
 
-```python
+```text
 @factory
 class SecondaryDbFactory:
     @provides(SessionManager, scope="singleton", qualifier="secondary")
