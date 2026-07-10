@@ -97,7 +97,7 @@ pico-sqlalchemy registers the following components at startup:
        │
 2. DatabaseSettings loaded from configuration (prefix="database")
        │
-3. SqlAlchemyFactory.create_session_manager(settings) → SessionManager
+3. SqlAlchemyFactory.create_session_manager(settings)  SessionManager
        │  Creates AsyncEngine + session factory
        │
 4. PicoSqlAlchemyLifecycle.setup_database(session_manager, configurers)
@@ -128,12 +128,12 @@ Service.create_user()                     ← @transactional
 │  _tx_context = TransactionContext(session_A)
 │
 ├─ Repository.find_by_name()              ← @repository (REQUIRED)
-│  │  _tx_context.get() → session_A       ← Joins existing
+│  │  _tx_context.get()  session_A       ← Joins existing
 │  │  (no new session created)
 │  └─ returns result
 │
 ├─ Repository.save()                      ← @repository (REQUIRED)
-│  │  _tx_context.get() → session_A       ← Same session
+│  │  _tx_context.get()  session_A       ← Same session
 │  └─ session_A.add(user)
 │
 └─ commit(session_A) or rollback
@@ -150,12 +150,12 @@ Service.create_user()                     ← @transactional
 Service.create_user()                     ← @transactional REQUIRED (new tx)
 │  activate "transaction" scope  (id = T1)         _tx_context = session_A
 │
-├─ container.get(AuditLog)  → scope="transaction"  ← created once, id T1
-├─ container.get(AuditLog)  → same instance        ← joined: same T1
+├─ container.get(AuditLog)   scope="transaction"  ← created once, id T1
+├─ container.get(AuditLog)   same instance        ← joined: same T1
 │
 ├─ Other.in_new_tx()                      ← @transactional REQUIRES_NEW
 │  │  activate "transaction" scope (id = T2)        _tx_context = session_B
-│  └─ container.get(AuditLog) → NEW instance        ← isolated in T2
+│  └─ container.get(AuditLog)  NEW instance        ← isolated in T2
 │     deactivate T2 (+ @cleanup), restore T1, session_A
 │
 └─ commit / rollback
@@ -175,7 +175,7 @@ pico-sqlalchemy uses **two interceptors** that work together via pico-ioc's AOP 
 ### For `@repository` methods (implicit transactions)
 
 ```text
-method call → TransactionalInterceptor → original method body
+method call  TransactionalInterceptor  original method body
                     │
                     ├─ Opens REQUIRED Read-Write transaction
                     └─ method body executes with session available
@@ -184,7 +184,7 @@ method call → TransactionalInterceptor → original method body
 ### For `@query` methods (declarative queries)
 
 ```text
-method call → TransactionalInterceptor → RepositoryQueryInterceptor
+method call  TransactionalInterceptor  RepositoryQueryInterceptor
                     │                           │
                     ├─ Opens REQUIRED            ├─ Binds method params
                     │  Read-Only transaction     ├─ Builds SQL (expr or raw)
@@ -244,7 +244,7 @@ REQUIRES_NEW flow:
 Session lifecycle is fully deterministic:
 
 ```text
-begin → await work → await commit or await rollback → await close
+begin  await work  await commit or await rollback  await close
 ```
 
 Rollback logic is selective via:
@@ -270,7 +270,7 @@ SELECT * FROM users WHERE username = :username
                 ├─ Parameters bound from method signature
                 ├─ Dynamic sorting appended (if PageRequest with sorts)
                 │  └─ Column names validated against entity.__table__.columns
-                └─ unique=True → scalars().first() | default → scalars().all()
+                └─ unique=True  scalars().first() | default  scalars().all()
 ```
 
 ### SQL mode (`@query(sql="...")`)
@@ -290,14 +290,14 @@ Full control over the query. Does **not** require entity binding.
 
 ```text
 @query(expr="active = true", paged=True)
-async def find_active(self, page: PageRequest) → Page[User]:
+async def find_active(self, page: PageRequest)  Page[User]:
                 │
                 ▼
 1. Extract PageRequest from parameter named "page" (required name)
 2. Build base SQL (expr or raw)
-3. Execute COUNT(*) subquery → total_elements
+3. Execute COUNT(*) subquery  total_elements
 4. Append LIMIT :_limit OFFSET :_offset
-5. Execute paginated query → content rows
+5. Execute paginated query  content rows
 6. Return Page(content, total_elements, page, size)
 ```
 
