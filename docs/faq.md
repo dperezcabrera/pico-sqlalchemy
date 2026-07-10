@@ -319,7 +319,7 @@ Sort("name", "DESC")
 
 **Fix:** Use one of: `REQUIRED`, `REQUIRES_NEW`, `SUPPORTS`, `MANDATORY`, `NOT_SUPPORTED`, `NEVER`.
 
-```python
+```text
 # Wrong
 @transactional(propagation="NESTED")
 
@@ -367,7 +367,7 @@ async def find(self): ...
 
 **Fix:** Use only one:
 
-```python
+```text
 # Wrong
 @query(expr="active = true", sql="SELECT * FROM users")
 
