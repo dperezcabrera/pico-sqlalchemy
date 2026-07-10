@@ -17,6 +17,16 @@ Alembic's async template, or the `env.py` from the
 [Alembic how-to](how-to/alembic.md) — or derive a sync engine inside your
 `env.py`.
 
+## "attached to a different loop" with asyncpg
+
+A `DatabaseConfigurer` that runs DDL via `asyncio.run(...)` leaves pooled
+asyncpg connections bound to that throwaway loop; the first request then
+fails with `got Future attached to a different loop`. End the configurer
+with `await engine.dispose()` so request loops create fresh connections.
+(SQLite/aiosqlite tolerates this, Postgres does not — test against the real
+dialect.) In tests, use `with TestClient(app):` — without the context
+manager every request gets its own event loop.
+
 ## `MissingGreenlet` or "greenlet_spawn has not been called"
 
 An async session was used from sync code. Access the session inside

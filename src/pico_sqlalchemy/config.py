@@ -43,6 +43,7 @@ class DatabaseConfigurer(Protocol):
                 async def _create():
                     async with engine.begin() as conn:
                         await conn.run_sync(self.base.metadata.create_all)
+                    await engine.dispose()  # asyncpg pools are loop-bound
                 asyncio.run(_create())
     """
 
