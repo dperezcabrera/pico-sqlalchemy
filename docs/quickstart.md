@@ -81,7 +81,7 @@ class UserService:
 
 ## 4\. Configure the Database
 
-Use `DatabaseConfigurer` to create tables on startup automatically.
+Use `DatabaseConfigurer` to create tables on startup automatically. Any `@component` with a `configure_database(engine)` method is collected (subclassing the protocol is optional), and hooks always run off the event loop, so `asyncio.run()` is safe even when the container boots under an ASGI server such as uvicorn.
 
 ```python
 import asyncio

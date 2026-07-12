@@ -10,6 +10,8 @@ These are auto-discovered when ``"pico_sqlalchemy"`` is listed in the
 ``modules`` argument of ``pico_ioc.init()``.
 """
 
+import asyncio
+import concurrent.futures
 import logging
 from typing import List
 
@@ -66,8 +68,21 @@ class PicoSqlAlchemyLifecycle:
             if isinstance(c, DatabaseConfigurer) and callable(getattr(c, "configure_database", None))
         ]
         ordered = sorted(valid, key=_priority_of)
-        for cfg in ordered:
-            cfg.configure_database(session_manager.engine)
+
+        def _run_hooks() -> None:
+            for cfg in ordered:
+                cfg.configure_database(session_manager.engine)
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            _run_hooks()
+        else:
+            # under an ASGI server the @configure phase runs inside the
+            # event loop; hooks block and commonly call asyncio.run() for
+            # DDL, so run them on a worker thread and wait
+            with concurrent.futures.ThreadPoolExecutor(1) as pool:
+                pool.submit(_run_hooks).result()
 
 
 @factory

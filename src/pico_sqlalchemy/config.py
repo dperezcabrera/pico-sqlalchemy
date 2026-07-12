@@ -16,27 +16,24 @@ from pico_ioc import configured
 class DatabaseConfigurer(Protocol):
     """Protocol for database startup hooks.
 
-    Implement this protocol and register the class as a ``@component``
-    to have ``configure_database()`` called automatically during application
-    startup, in ascending ``priority`` order.
+    Any ``@component`` with a ``configure_database(engine)`` method is
+    collected and called during application startup — subclassing this
+    protocol is optional. Hooks always run OFF the event loop (on a worker
+    thread when the container boots under an ASGI server), so the
+    ``asyncio.run()`` pattern below is safe in every context.
 
     Typical uses include DDL creation, Alembic migrations, and seed
     data loading.
 
-    Attributes:
-        priority: Controls the execution order among multiple
-            configurers.  Lower values run first.  Defaults to ``0``.
+    An optional ``priority`` attribute (int, default ``0``) controls the
+    execution order among multiple configurers; lower values run first.
 
     Example::
 
         @component
-        class SchemaSetup(DatabaseConfigurer):
+        class SchemaSetup:
             def __init__(self, base: AppBase):
                 self.base = base
-
-            @property
-            def priority(self) -> int:
-                return 0
 
             def configure_database(self, engine) -> None:
                 import asyncio
@@ -46,10 +43,6 @@ class DatabaseConfigurer(Protocol):
                     await engine.dispose()  # asyncpg pools are loop-bound
                 asyncio.run(_create())
     """
-
-    @property
-    def priority(self) -> int:
-        return 0
 
     def configure_database(self, engine) -> None:
         """Run configuration against the given ``AsyncEngine``.
