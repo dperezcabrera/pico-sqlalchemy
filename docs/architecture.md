@@ -102,8 +102,10 @@ pico-sqlalchemy registers the following components at startup:
        │
 4. PicoSqlAlchemyLifecycle.setup_database(session_manager, configurers)
        │  Collects all DatabaseConfigurer implementations
-       │  Sorts by priority (ascending)
-       │  Calls configure_database(engine) on each
+       │  Sorts by priority (ascending, optional attribute, default 0)
+       │  Calls configure_database(engine) on each, always OFF the event
+       │  loop (worker thread when booting under an ASGI server), so
+       │  hooks may call asyncio.run() for DDL in any context
        │
 5. Application ready — interceptors, repositories, services available
 ```
