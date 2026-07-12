@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.h
 
 ---
 
+## [0.5.1] - 2026-07-12
+
+### Fixed
+- **`DatabaseConfigurer` hooks run off the event loop.** Under an ASGI server (uvicorn) the `@configure` phase executes inside the running loop, so a hook using the documented `asyncio.run()` DDL pattern crashed with `asyncio.run() cannot be called from a running event loop`. Hooks now run on a worker thread when a loop is active; behavior outside a loop is unchanged.
+- **Structural matching no longer requires `priority`.** The protocol declared `priority` as a member, so a plain `@component` with only `configure_database()` was silently skipped by `List[DatabaseConfigurer]` collection unless it subclassed the protocol or defined the attribute. `priority` is now an optional attribute (default 0, as `setup_database` always assumed).
+
+---
+
 ## [0.5.0] - 2026-07-10
 
 ### Added
