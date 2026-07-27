@@ -1,0 +1,51 @@
+# pico-sqlalchemy
+
+> Seamless integration between Pico-IoC and SQLAlchemy with async support, transaction management, and repository pattern
+
+Install: `pip install pico-sqlalchemy`. Import surface: `from pico_sqlalchemy import ...`.
+
+## Usage
+
+```python
+from sqlalchemy import Integer, String
+from pico_sqlalchemy import AppBase, Mapped, mapped_column
+
+class User(AppBase):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(50))
+```
+
+## Public API
+
+- `class DatabaseSettings` — Type-safe database connection settings.
+- `class DatabaseConfigurer(Protocol)` — Protocol for database startup hooks.
+- `transactional(_func: Optional[Callable[P, R]]=None, *, propagation: str='REQUIRED', read_only: bool=False, isolation_level: Optional[str]=None, rollback_for: tuple[type[BaseException], ...]=(Exception,), no_rollback_for: tuple[type[BaseException], ...]=())` — Mark a method for declarative transaction management.
+- `repository(cls: Optional[type[Any]]=None, *, scope: str='singleton', **kwargs: Any)` — Mark a class as a repository with implicit transactions.
+- `query(expr: str | None=None, *, sql: str | None=None, paged: bool=False, unique: bool=False)` — Declare a method as an automatically executed query.
+- `class SessionManager` — Owns the SQLAlchemy ``AsyncEngine`` and manages session/transaction lifecycle.
+- `get_session(manager: SessionManager)` — Return the ``AsyncSession`` from the active transaction context.
+- `class TransactionalInterceptor(MethodInterceptor)` — Opens or joins a transaction for intercepted methods.
+- `class SqlAlchemyFactory` — Factory that creates the ``SessionManager`` singleton.
+- `class AlembicMigrator`
+- `class AppBase(DeclarativeBase)` — Central SQLAlchemy ``DeclarativeBase`` for all application models.
+- `Mapped`
+- `mapped_column`
+- `class Page(Generic[T])` — Generic container for a page of query results.
+- `class PageRequest` — Request parameters for a paginated query.
+- `class Sort` — A single sort specification: field name and direction.
+- `class RepositoryQueryInterceptor(MethodInterceptor)` — Executes declarative queries for ``@query``-decorated methods.
+
+## Docs
+
+- docs/CHANGELOG.md
+- docs/architecture.md
+- docs/development/ (1 pages)
+- docs/faq.md
+- docs/how-to/ (3 pages)
+- docs/migration.md
+- docs/overview.md
+- docs/quickstart.md
+- docs/reference/ (4 pages)
+- docs/skills.md
+- docs/troubleshooting.md
