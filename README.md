@@ -136,7 +136,8 @@ class UserService:
 
 ```python
 import asyncio
-from pico_ioc import init, configuration, DictSource
+from pico_boot import init
+from pico_ioc import configuration, DictSource
 
 config = configuration(DictSource({
     "database": {
@@ -146,7 +147,7 @@ config = configuration(DictSource({
 }))
 
 async def main():
-    container = init(modules=["pico_sqlalchemy", "__main__"], config=config)
+    container = init(modules=["__main__"], config=config)
     service = await container.aget(UserService)
     
     user = await service.create("alice")

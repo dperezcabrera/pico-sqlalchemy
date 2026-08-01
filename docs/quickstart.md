@@ -107,7 +107,8 @@ Initialize the container and run the app.
 
 ```python
 import asyncio
-from pico_ioc import init, configuration, DictSource
+from pico_boot import init
+from pico_ioc import configuration, DictSource
 
 async def main():
     # Configuration
@@ -122,7 +123,7 @@ async def main():
 
     # Initialize container
     container = init(
-        modules=["pico_sqlalchemy", "__main__"],
+        modules=["__main__"],
         config=cfg
     )
 

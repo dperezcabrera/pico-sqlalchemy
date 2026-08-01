@@ -166,10 +166,10 @@ For the secondary database, you may need to call `configure_database()` manually
 ## Step 7: Wire It Up
 
 ```python
-from pico_ioc import init
+from pico_boot import init
 
 container = init(
-    modules=["pico_sqlalchemy", "my_app"],
+    modules=["my_app"],
     config=config,
 )
 ```
