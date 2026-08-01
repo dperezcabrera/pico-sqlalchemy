@@ -7,8 +7,11 @@ This guide covers testing patterns for pico-sqlalchemy applications, including i
 ## Prerequisites
 
 ```bash
-pip install pytest pytest-asyncio aiosqlite
+pip install pytest pytest-asyncio aiosqlite pico-testing
 ```
+
+`pico-testing` activates on install (no conftest wiring) and provides the
+`make_container` fixture used by the container-based sections below.
 
 In your `pyproject.toml` or `pytest.ini`, enable strict async mode:
 
@@ -157,12 +160,13 @@ async def test_never_fails_with_transaction():
 
 ## 4. Integration Tests with the IoC Container
 
-For full end-to-end tests that exercise interceptors, use `pico_ioc.init()`:
+For full end-to-end tests that exercise interceptors, build the container with
+the `make_container` fixture from [pico-testing](https://github.com/dperezcabrera/pico-testing):
 
 ```python
 import os
 import pytest
-from pico_ioc import DictSource, component, configuration, init
+from pico_ioc import component
 from pico_sqlalchemy import (
     AppBase, Mapped, mapped_column, SessionManager,
     get_session, repository, transactional, DatabaseConfigurer,
@@ -210,19 +214,16 @@ class ItemService:
         return await self.repo.save(Item(name=name))
 
 
-@pytest.fixture(scope="session")
-def container():
-    cfg = configuration(DictSource({
-        "database": {
-            "url": "sqlite+aiosqlite:///:memory:",
-            "echo": False,
-        }
-    }))
-    c = init(modules=["pico_sqlalchemy", __name__], config=cfg)
-    try:
-        yield c
-    finally:
-        c.cleanup_all()
+# make_container is function-scoped, so every test gets a fresh container and
+# pico-testing shuts it down on teardown. Auto-discovery is off: the modules
+# listed here are the only ones loaded.
+@pytest.fixture
+def container(make_container):
+    return make_container(
+        "pico_sqlalchemy",
+        __name__,
+        config={"database": {"url": "sqlite+aiosqlite:///:memory:", "echo": False}},
+    )
 
 
 @pytest.fixture

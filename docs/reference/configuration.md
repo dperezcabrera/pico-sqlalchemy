@@ -40,7 +40,8 @@ The following fields map directly to the underlying SQLAlchemy `create_async_eng
 Settings are loaded automatically from a configuration source with the `database` prefix:
 
 ```python
-from pico_ioc import init, configuration, DictSource
+from pico_boot import init
+from pico_ioc import configuration, DictSource
 
 config = configuration(DictSource({
     "database": {
@@ -50,7 +51,7 @@ config = configuration(DictSource({
     }
 }))
 
-container = init(modules=["pico_sqlalchemy", "myapp"], config=config)
+container = init(modules=["myapp"], config=config)
 ```
 
 Or via YAML:

@@ -13,7 +13,8 @@ Seamless integration between Pico-IoC and SQLAlchemy with async support, transac
 ## Quick Start
 
 ```python
-from pico_ioc import init, configuration, DictSource, component
+from pico_boot import init
+from pico_ioc import configuration, DictSource, component
 from pico_sqlalchemy import repository, query, transactional, SessionManager, get_session
 
 # Define a repository
@@ -47,7 +48,7 @@ class UserService:
 config = configuration(DictSource({
     "database": {"url": "sqlite+aiosqlite:///:memory:"}
 }))
-container = init(modules=["pico_sqlalchemy", "__main__"], config=config)
+container = init(modules=["__main__"], config=config)
 ```
 
 ## Installation

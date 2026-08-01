@@ -23,7 +23,8 @@ import asyncio
 from dataclasses import dataclass
 
 # --- Imports from pico-ioc ---
-from pico_ioc import init, component, configuration, DictSource
+from pico_boot import init
+from pico_ioc import component, configuration, DictSource
 
 # --- Imports from pico-sqlalchemy ---
 from pico_sqlalchemy import (
@@ -133,7 +134,7 @@ async def main():
         }
     }))
     
-    container = init(modules=[__name__, "pico_sqlalchemy"], config=config)
+    container = init(modules=[__name__], config=config)
 
     try:
         user_service = await container.aget(UserService)
