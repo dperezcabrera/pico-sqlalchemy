@@ -8,7 +8,7 @@ Pico-SQLAlchemy provides seamless integration between Pico-IoC and SQLAlchemy, o
 
 ### What Python versions are supported?
 
-Pico-SQLAlchemy requires Python 3.11 or later.
+Pico-SQLAlchemy requires Python 3.11 or later. Every release is tested on 3.11, 3.12, 3.13 and 3.14.
 
 ### What SQLAlchemy versions are supported?
 

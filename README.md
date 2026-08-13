@@ -17,7 +17,7 @@
 
 It brings constructor-based dependency injection, **implicit transaction management**, and powerful **declarative queries** using pure Python and SQLAlchemy’s Async ORM.
 
-> **Requires Python 3.11+**
+> **Requires Python 3.11+** (tested on 3.11, 3.12, 3.13 and 3.14)
 > **Async-Native:** Built entirely on `AsyncSession` and `create_async_engine`.
 > **Zero-Boilerplate:** Repositories are transactional by default.
 > **Declarative Queries:** Define SQL or expressions in decorators; the library executes them for you.
