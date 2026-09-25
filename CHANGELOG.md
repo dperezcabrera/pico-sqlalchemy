@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.h
 
 ---
 
+## [0.5.2] - 2026-09-25
+
+### Fixed
+- **Installs against SQLAlchemy 2.1 no longer fail at import.** SQLAlchemy 2.1.0 stopped installing `greenlet` implicitly; it now comes only with the `asyncio` extra. pico-sqlalchemy always imports `sqlalchemy.ext.asyncio`, so a fresh `pip install pico-sqlalchemy` resolved SQLAlchemy 2.1.0 without `greenlet` and raised `ImportError` on `import pico_sqlalchemy`. The dependency is now `sqlalchemy[asyncio] >= 2.0`. Verified against SQLAlchemy 2.1.0 and 2.0.54.
+
+---
+
 ## [0.5.1] - 2026-07-12
 
 ### Fixed

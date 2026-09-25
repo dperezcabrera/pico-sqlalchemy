@@ -38,7 +38,7 @@ classifiers = [
 
 dependencies = [
     "pico-ioc >= 2.2.6",
-    "sqlalchemy >= 2.0",
+    "sqlalchemy[asyncio] >= 2.0",
 ]
 
 [project.optional-dependencies]
