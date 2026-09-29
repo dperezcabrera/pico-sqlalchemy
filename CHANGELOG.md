@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.h
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- Dependency floors raised to what the test suite proves: `pico-ioc >= 2.3.3` (was 2.2.6) and `sqlalchemy[asyncio] >= 2.0.46` (was 2.0; 2.0.0 rejects the `pool_size` argument on the aiosqlite dialect, and releases before 2.0.46 leave the process hanging at exit with current aiosqlite). A new CI job runs the suite with every declared floor pinned, so a floor that installs but does not work can no longer ship.
+
 ## [0.5.2] - 2026-09-25
 
 ### Fixed

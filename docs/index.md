@@ -68,7 +68,7 @@ pip install asyncpg     # PostgreSQL
 
 - Python 3.11+ (tested on 3.11, 3.12, 3.13 and 3.14)
 - SQLAlchemy 2.0+
-- pico-ioc >= 2.2.0
+- pico-ioc >= 2.3.3
 
 ## Documentation
 
