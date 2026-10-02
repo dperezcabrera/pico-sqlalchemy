@@ -1,7 +1,7 @@
 # pico-sqlalchemy
 
 [![PyPI](https://img.shields.io/pypi/v/pico-sqlalchemy.svg)](https://pypi.org/project/pico-sqlalchemy/)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dperezcabrera/pico-sqlalchemy)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue)](https://deepwiki.com/dperezcabrera/pico-sqlalchemy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![CI (tox matrix)](https://github.com/dperezcabrera/pico-sqlalchemy/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/dperezcabrera/pico-sqlalchemy/branch/main/graph/badge.svg)](https://codecov.io/gh/dperezcabrera/pico-sqlalchemy)
